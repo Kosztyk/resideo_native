@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -35,6 +36,7 @@ from .protocol import (
 PASSWORD_SELECTOR = selector.TextSelector(
     selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
 )
+_LOGGER = logging.getLogger(__name__)
 
 
 class ResideoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -97,9 +99,17 @@ class ResideoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 return await self._finish(auth, country)
             except InteractionRequired:
+                _LOGGER.warning(
+                    "Resideo automatic sign-in fell back to browser (%s)", auth.login_diagnostic()
+                )
                 self._browser_required = True
                 return await self.async_step_browser()
             except ResideoError as err:
+                _LOGGER.warning(
+                    "Resideo automatic account setup stopped (%s, error=%s)",
+                    auth.login_diagnostic(),
+                    type(err).__name__,
+                )
                 errors["base"] = self._error(err)
         schema = vol.Schema(
             {
