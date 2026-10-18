@@ -1,0 +1,80 @@
+{
+  "title": "Resideo Native",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectează termostatul Resideo",
+        "description": "Folosește contul Resideo (fostul Honeywell Home) care controlează Lyric T6. Nu este necesar un cont de dezvoltator sau SmartThings.",
+        "menu_options": {
+          "account": "E-mail și parolă",
+          "browser": "Autentificare în browser",
+          "refresh_token": "Token de reîmprospătare (avansat)"
+        }
+      },
+      "account": {
+        "title": "Autentificare Resideo",
+        "description": "Folosește contul din aplicația Resideo. Parola este utilizată la autentificare și nu este salvată. Introdu codul de țară din două litere, de exemplu RO. Dacă Resideo solicită un pas suplimentar în browser, configurarea va continua cu autentificarea în browser.",
+        "data": {
+          "username": "Adresă de e-mail",
+          "password": "Parolă",
+          "country": "Cod țară"
+        }
+      },
+      "browser": {
+        "title": "Autentificare Resideo în browser",
+        "description": "Deschide [autentificarea Resideo]({login_url}) într-un browser pe calculator. În aceeași filă, deschide Developer Tools → Network și activează Preserve log înainte de autentificare. Finalizează pașii solicitați de Resideo, apoi copiază adresa Request URL completă care începe cu com.honeywell.acs.lyric.enterprise://oauth2redirect în câmpul de mai jos. Adresa poate conține o bară înainte de semnul întrebării; ambele forme sunt acceptate. Este normal ca browserul să afișeze că nu poate deschide aplicația. Folosește doar linkul acestei încercări de configurare.",
+        "data": {
+          "redirect_url": "Adresa completă de redirecționare Resideo"
+        }
+      },
+      "refresh_token": {
+        "title": "Token Resideo existent",
+        "description": "Avansat: tokenul trebuie să provină din aplicația Android Resideo, nu din First Alert sau API-ul de dezvoltator. Nu îl trimite în conversații sau jurnale.",
+        "data": {
+          "refresh_token": "Token de reîmprospătare Resideo"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Resideo a respins autentificarea. Verifică datele în aplicația Resideo sau reia autentificarea în browser cu un link nou.",
+      "interaction_required": "Resideo solicită un pas în browser pentru finalizarea autentificării. Continuă folosind linkul Resideo de mai jos, chiar dacă acest cont funcționează deja în aplicația oficială.",
+      "invalid_callback": "Adresa de redirecționare este incompletă sau aparține altei încercări de configurare. Copiază adresa Request URL completă după autentificarea prin linkul din acest formular.",
+      "cannot_connect": "Nu se poate realiza conexiunea cu Resideo. Verifică rețeaua și încearcă mai târziu.",
+      "rate_limited": "Resideo limitează cererile. Așteaptă câteva minute înainte de a reîncerca.",
+      "unexpected_response": "Resideo a trimis un răspuns neașteptat. Descarcă diagnosticul integrării, dacă este disponibil."
+    },
+    "abort": {
+      "already_configured": "Acest cont Resideo este deja configurat.",
+      "reauth_successful": "Autorizarea Resideo a fost reînnoită.",
+      "wrong_account": "Autentifică-te cu același cont Resideo ca în integrarea existentă.",
+      "no_thermostats": "Autentificarea a reușit, dar contul Resideo nu a returnat termostate compatibile. Verifică migrarea contului și termenii în aplicația Resideo. Dispozitivele exclusive First Alert/Titan nu sunt acceptate."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Setări Resideo",
+        "description": "Toate termostatele folosesc aceeași reîmprospătare a contului. Modificările de temperatură folosesc tipul de menținere ales, dacă nu este deja activă o menținere permanentă.",
+        "data": {
+          "poll_interval": "Interval de actualizare (secunde)",
+          "default_hold": "Menținere implicită la schimbarea temperaturii"
+        }
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "none": "Urmează programul",
+              "temporary_hold": "Menținere temporară",
+              "permanent_hold": "Menținere permanentă"
+            }
+          }
+        }
+      }
+    }
+  }
+}

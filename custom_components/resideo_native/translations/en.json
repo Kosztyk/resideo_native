@@ -1,0 +1,80 @@
+{
+  "title": "Resideo Native",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect your Resideo thermostat",
+        "description": "Use the Resideo (formerly Honeywell Home) account that controls your Lyric T6. No developer account or SmartThings account is needed.",
+        "menu_options": {
+          "account": "Email and password",
+          "browser": "Sign in in your browser",
+          "refresh_token": "Refresh token (advanced)"
+        }
+      },
+      "account": {
+        "title": "Sign in to Resideo",
+        "description": "Use your normal Resideo app account. Your password is used for sign-in and is not saved. Country is the two-letter code used in the app, for example RO or GB. If Resideo needs an additional browser step, setup will continue with browser sign-in.",
+        "data": {
+          "username": "Email address",
+          "password": "Password",
+          "country": "Country code"
+        }
+      },
+      "browser": {
+        "title": "Sign in with Resideo in your browser",
+        "description": "Open [Resideo sign-in]({login_url}) in a desktop browser. In that same tab, open Developer Tools → Network and enable Preserve log before signing in. Complete any Resideo prompts, then copy the full Request URL beginning com.honeywell.acs.lyric.enterprise://oauth2redirect into the field below. The URL may include a slash before the question mark; both forms are accepted. The browser may report that it cannot open the app; that is expected. Use only the link from this setup attempt.",
+        "data": {
+          "redirect_url": "Complete Resideo redirect URL"
+        }
+      },
+      "refresh_token": {
+        "title": "Use an existing Resideo app refresh token",
+        "description": "Advanced: this must be a token from the legacy Resideo Android app client, not First Alert or the developer API. Never share it in chat or logs. Normal account or browser sign-in is recommended.",
+        "data": {
+          "refresh_token": "Resideo app refresh token"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Resideo rejected the login or authorization. Check your account in the Resideo app, or sign in again using a fresh browser link.",
+      "interaction_required": "Resideo needs a browser step to finish sign-in. Continue using the Resideo sign-in link below, even if your account already works in the official app.",
+      "invalid_callback": "The redirect URL is incomplete or belongs to another setup attempt. Copy the full Request URL after signing in with the link shown in this form.",
+      "cannot_connect": "Cannot connect to Resideo. Check the connection and try again later.",
+      "rate_limited": "Resideo is limiting requests. Wait a few minutes before retrying.",
+      "unexpected_response": "Resideo returned an unexpected response. Download the integration diagnostics if available and report the issue."
+    },
+    "abort": {
+      "already_configured": "This Resideo account is already configured.",
+      "reauth_successful": "Your Resideo authorization has been renewed.",
+      "wrong_account": "Sign in with the same Resideo account as the existing integration.",
+      "no_thermostats": "Sign-in succeeded, but this legacy Resideo account returned no supported thermostats. Complete account migration or updated terms in the Resideo app first. First Alert / Titan-only devices are not supported by this integration."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Resideo settings",
+        "description": "One account refresh is shared by all thermostats. Manual temperature changes use the selected hold unless a permanent hold is already active.",
+        "data": {
+          "poll_interval": "Refresh interval (seconds)",
+          "default_hold": "Default hold for temperature changes"
+        }
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "none": "Follow schedule",
+              "temporary_hold": "Temporary hold",
+              "permanent_hold": "Permanent hold"
+            }
+          }
+        }
+      }
+    }
+  }
+}
