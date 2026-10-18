@@ -1,0 +1,11 @@
+{
+  "domain": "resideo_native",
+  "name": "Resideo Native",
+  "codeowners": ["@Kosztyk"],
+  "config_flow": true,
+  "documentation": "https://www.resideo.com/emea/en/solutions/home-comfort/t6r/",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.1.2"
+}
