@@ -112,6 +112,17 @@ class ResideoAuth:
         self.on_token = on_token
         self._lock = asyncio.Lock()
         self._retry_at = 0.0
+        self._login_stage = "not_started"
+        self._login_reason = "none"
+        self._login_status = 0
+        self._login_cookies = 0
+
+    def login_diagnostic(self) -> str:
+        """Report only internal stage labels and counts, never server text."""
+        return (
+            f"stage={self._login_stage}, reason={self._login_reason}, "
+            f"http={self._login_status}, cookies={self._login_cookies}"
+        )
 
     @staticmethod
     def new_authorization(country: str = "RO") -> dict[str, str]:
@@ -173,21 +184,32 @@ class ResideoAuth:
 
     async def login(self, username: str, password: str, country: str = "RO") -> Token:
         """Submit the actual hosted sign-in form, maintaining its CSRF cookies."""
+        self._login_stage = "authorization_page"
+        self._login_reason = "none"
+        self._login_status = self._login_cookies = 0
         authorization = self.new_authorization(country)
         origin = urlsplit(AUTHORITY)
         # HA's shared HTTP session may use DummyCookieJar. A short-lived auth
         # session is required for B2C's anti-forgery cookies; never share them.
+        # B2C sends opaque, padded cookie values without quotes. aiohttp's
+        # default quoting changes them on the wire and B2C rejects the form
+        # with HTTP 400 instead of returning its normal JSON login response.
         async with aiohttp.ClientSession(
-            cookie_jar=aiohttp.CookieJar(),
+            cookie_jar=aiohttp.CookieJar(quote_cookie=False),
             timeout=TIMEOUT,
             trust_env=self.session.trust_env,
             headers={"User-Agent": USER_AGENT},
         ) as login_session:
-            response, _, _ = await self._request(login_session, "GET", authorization["url"])
-            settings = self.read_settings(response)
+            response = await self._load_login_page(login_session, authorization["url"])
+            try:
+                settings = self.read_settings(response)
+            except InteractionRequired:
+                self._login_reason = "unsupported_login_page"
+                raise
             tenant = settings["hosts"]["tenant"]
             base = f"{origin.scheme}://{origin.netloc}{tenant}"
             params = {"tx": settings["transId"], "p": settings["hosts"]["policy"]}
+            self._login_stage = "submit_credentials"
             text, status, _ = await self._request(
                 login_session,
                 "POST",
@@ -199,6 +221,7 @@ class ResideoAuth:
             try:
                 result = json.loads(text)
             except (ValueError, TypeError) as err:
+                self._login_reason = "credential_response_not_json"
                 raise InteractionRequired("Complete sign-in using the browser method") from err
             if status != 200 or not isinstance(result, dict) or str(result.get("status")) != "200":
                 if isinstance(result, dict) and any(
@@ -213,15 +236,42 @@ class ResideoAuth:
                         "consent",
                     )
                 ):
+                    self._login_reason = "server_requested_interaction"
                     raise InteractionRequired("Complete verification in the browser sign-in method")
+                self._login_reason = "credentials_rejected"
                 raise AuthenticationError(
                     "Resideo rejected sign-in; check your account in the Resideo app"
                 )
             confirmed = base + "/api/" + settings["api"] + "/confirmed"
             params["csrf_token"] = settings["csrf"]
             params["rememberMe"] = "false"
+            self._login_stage = "confirm_sign_in"
             callback = await self._finish_login(login_session, confirmed + "?" + urlencode(params))
-        return await self.exchange_callback(callback, authorization)
+        self._login_stage = "token_exchange"
+        token = await self.exchange_callback(callback, authorization)
+        self._login_stage = "complete"
+        return token
+
+    async def _load_login_page(self, session: aiohttp.ClientSession, url: str) -> str:
+        """Reach the hosted form through B2C redirects, preserving its cookies."""
+        origin = urlsplit(AUTHORITY)
+        for _ in range(8):
+            try:
+                parsed = urlsplit(url)
+            except ValueError as err:
+                raise InvalidResponse("Unexpected redirect during Resideo sign-in") from err
+            if parsed.scheme != origin.scheme or parsed.netloc != origin.netloc:
+                raise InvalidResponse("Unexpected redirect during Resideo sign-in")
+            text, status, headers = await self._request(session, "GET", url)
+            if status in (301, 302, 303, 307, 308) and headers.get("Location"):
+                try:
+                    url = urljoin(url, headers["Location"])
+                except ValueError as err:
+                    raise InvalidResponse("Unexpected redirect during Resideo sign-in") from err
+                continue
+            return text
+        self._login_reason = "initial_redirect_limit"
+        raise InteractionRequired("Resideo sign-in did not reach the form; use browser sign-in")
 
     async def _finish_login(self, session: aiohttp.ClientSession, url: str) -> str:
         """Follow B2C-only redirects, stopping before the native app callback."""
@@ -236,9 +286,11 @@ class ResideoAuth:
             if status in (301, 302, 303, 307, 308) and headers.get("Location"):
                 url = urljoin(url, headers["Location"])
                 continue
+            self._login_reason = "confirmation_not_redirect"
             raise InteractionRequired(
                 "Use browser sign-in to complete verification or accept updated terms"
             )
+        self._login_reason = "confirmation_redirect_limit"
         raise InteractionRequired("Resideo sign-in did not finish; use browser sign-in")
 
     async def exchange_callback(self, callback: str, authorization: dict[str, str]) -> Token:
@@ -340,6 +392,9 @@ class ResideoAuth:
             async with session.request(
                 method, url, timeout=TIMEOUT, allow_redirects=False, **kwargs
             ) as response:
+                if self._login_stage not in ("not_started", "complete"):
+                    self._login_status = response.status
+                    self._login_cookies = len(session.cookie_jar)
                 if response.status == 429:
                     pause = retry_seconds(response.headers.get("Retry-After"))
                     self._retry_at = time.monotonic() + pause
