@@ -5,9 +5,13 @@
     "@Kosztyk"
   ],
   "config_flow": true,
-  "documentation": "https://www.resideo.com/emea/en/solutions/home-comfort/t6r/",
+  "dependencies": [
+    "climate"
+  ],
+  "documentation": "https://github.com/Kosztyk/resideo_native#readme",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Kosztyk/resideo_native/issues",
   "requirements": [],
-  "version": "0.1.5"
+  "version": "0.1.6"
 }
