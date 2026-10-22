@@ -8,7 +8,7 @@ Control Honeywell Home / Resideo **Lyric T6 and T6R** thermostats from Home Assi
 
 This is an independent community integration for the legacy Resideo / Honeywell Home cloud service used by European Lyric thermostats. Internet access and an available Resideo service are required; this is not local LAN control.
 
-> **Experimental:** Sign-in and discovery have succeeded on a European Jasper/T6 account. The software has 44 passing automated tests. Physical thermostat command acceptance still needs confirmation on real installations.
+> **Experimental:** Sign-in and discovery have succeeded on a European Jasper/T6 account. An earlier development build was reported to pass 44 automated tests; those test files are not included in this public repository. Physical thermostat command acceptance still needs confirmation on real installations.
 
 **Quick links:** [Installation](#installation) · [Retrieve the callback URL](#browser-sign-in) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
@@ -69,11 +69,11 @@ Keep the integration's complete folder, including `protocol`, `translations`, an
 If you use HACS, add this GitHub repository as a custom repository:
 
 1. Open **HACS**, then its three-dot menu → **Custom repositories**.
-2. Enter this repository's GitHub URL and select **Integration** as the type.
+2. Enter `https://github.com/Kosztyk/resideo_native` and select **Integration** as the type.
 3. Add the repository and download **Resideo Native**.
 4. Restart Home Assistant and add the integration under **Settings → Devices & services**.
 
-This is a custom-repository installation; the project does not claim inclusion in HACS's default catalog. See the [HACS custom repository guide](https://www.hacs.xyz/docs/faq/custom_repositories/) for help.
+Use the custom-repository installation until HACS maintainers approve inclusion in the default catalog. See the [HACS custom repository guide](https://www.hacs.xyz/docs/faq/custom_repositories/) for help.
 
 ## Sign-in
 
@@ -231,30 +231,31 @@ For an issue report, include the integration version, Home Assistant version, th
 
 - Cloud polling; SignalR push updates are not implemented.
 - No schedule editor, vacation creation, geofencing, hot-water controls, fan controls, or installer settings.
-- No automatic browser callback helper or extension is included in version 0.1.2.
+- No automatic browser callback helper or extension is included in the current release.
 - Physical command acceptance remains to be verified on real devices.
 - Resideo service or authentication changes can require integration updates.
 
 ## Development and validation
 
-Version 0.1.2 passed **44 automated tests** against a local protocol test server and Home Assistant **2026.10.2**, using Python **3.14.8**. Tests cover authorization/PKCE, callback validation, refresh tokens, discovery, temperature conversion, command encoding, bounds/deadband checks, climate services, reauthentication, options, and diagnostic redaction.
+For **v0.1.6**, the public repository includes automated HACS, Hassfest and
+packaging checks. The CI workflow validates repository layout, manifest fields,
+Python syntax and JSON metadata.
 
-Run the complete suite in a compatible Python environment:
-
-```sh
-python -m pip install -r requirements-test.txt
-python -m pytest -q
-ruff check .
-```
-
-The standalone protocol tests can also run with Python 3.12+ and `aiohttp`:
+Run these packaging checks from the repository root:
 
 ```sh
-python -m pip install aiohttp
-python -m unittest discover -s tests -p test_protocol.py -q
+python3 tools/check_repository.py
+python3 -m unittest discover -s tests -v
+python3 -m compileall -q custom_components
 ```
 
-See [protocol documentation](docs/PROTOCOL.md), [validation notes](docs/VALIDATION.md), and the [changelog](CHANGELOG.md) for implementation details and the limits of testing.
+**Scope:** These are packaging and syntax checks, not Resideo-cloud integration
+tests. Earlier versions described 44 automated protocol/behavior tests on
+Home Assistant 2026.10.2. Their test sources are not in this public
+repository, so those historical results are not reproduced here.
+
+See [validation notes](VALIDATION.md) and the [changelog](CHANGELOG.md)
+for publishing details and testing limitations.
 
 ## License and attribution
 
