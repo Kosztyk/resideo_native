@@ -8,7 +8,7 @@ Control Honeywell Home / Resideo **Lyric T6 and T6R** thermostats from Home Assi
 
 This is an independent community integration for the legacy Resideo / Honeywell Home cloud service used by European Lyric thermostats. Internet access and an available Resideo service are required; this is not local LAN control.
 
-> **Experimental:** Sign-in and discovery have succeeded on a European Jasper/T6 account. An earlier development build was reported to pass 44 automated tests; those test files are not included in this public repository. Physical thermostat command acceptance still needs confirmation on real installations.
+> **Hardware-tested write controls:** The maintainer confirms successful thermostat operation using this Home Assistant integration on a physical **Resideo/Honeywell Jasper** thermostat (European Lyric T6-family backend), including HVAC mode, target temperature and hold/preset commands. Home Assistant identifies the model as `Jasper` but does **not** expose the device firmware version. This confirmation is limited to the actual device tested; other model/firmware combinations remain unverified. Offline packaging checks cannot independently prove physical command acceptance. See [VALIDATION.md](VALIDATION.md).
 
 **Quick links:** [Installation](#installation) · [Retrieve the callback URL](#browser-sign-in) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
@@ -16,7 +16,8 @@ This is an independent community integration for the legacy Resideo / Honeywell 
 
 | Device or service | Support |
 | --- | --- |
-| European Lyric T6 / T6R using the legacy Resideo Smart Home app backend | Target devices; Jasper/T6 sign-in and discovery confirmed |
+| Physical Jasper device using the European Lyric T6-family backend | Maintainer reports successful hardware operation for mode, setpoint and hold commands; firmware not exposed in HA | 
+| Other European Lyric T6 / T6R variants on the legacy Resideo Smart Home backend | Discovered/supported by code; device/firmware write behavior requires separate verification |
 | Other thermostats using the same legacy API | May work; not individually verified |
 | First Alert / Auth0 / Titan-only accounts or devices | Not supported |
 | Total Connect Comfort or Total Connect security systems | Not supported |
@@ -45,6 +46,23 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 | Thermostat | Registered to that account and visible in the official app |
 | Internet | Home Assistant must be able to reach Resideo's authentication and device services |
 | Browser sign-in | A desktop browser; the instructions below use Google Chrome |
+
+### Real-thermostat write verification
+
+The maintainer reports having operated their own **Jasper** thermostat using the
+**Resideo Native** Home Assistant integration, confirming successful real-device
+response to HVAC mode changes (`set_mode`), temperature setpoint changes
+(`set_temperature`), and hold/preset controls (`set_hold`). These are the
+three write paths called by the Home Assistant climate entity. The tested
+thermostat appears as model **Jasper** in the Home Assistant device registry;
+`sw_version` is **not provided** (no firmware version is claimed).
+
+This is **maintainer-reported physical testing**, not a simulation and not
+proof that every model or firmware supports the same commands. The public
+repository does not include recordings or device-side command logs of these
+specific test operations. A reviewer may request further evidence, model
+identifiers, firmware obtained from the official app, or a fresh demonstration.
+See [VALIDATION.md](VALIDATION.md) for scope and limitations.
 
 ## Installation
 
@@ -232,7 +250,7 @@ For an issue report, include the integration version, Home Assistant version, th
 - Cloud polling; SignalR push updates are not implemented.
 - No schedule editor, vacation creation, geofencing, hot-water controls, fan controls, or installer settings.
 - No automatic browser callback helper or extension is included in the current release.
-- Physical command acceptance remains to be verified on real devices.
+- The maintainer confirms physical command acceptance on their **Jasper** device; firmware is not available from the Home Assistant device registry. Write behavior has not been individually verified on other models or firmware builds.
 - Resideo service or authentication changes can require integration updates.
 
 ## Development and validation
