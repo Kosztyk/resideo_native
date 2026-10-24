@@ -21,8 +21,7 @@ thermostat command acceptance, temperature consistency or HA runtime behavior.
 
 ## Hardware write verification (maintainer statement)
 
-The maintainer has confirmed physical operation of a real **Resideo/Honeywell
-Jasper** thermostat with the **Resideo Native** Home Assistant integration,
+The maintainer has confirmed physical operation of a real **Honeywell Home Lyric T6 Pro** thermostat (internal model **Jasper**, owner-reported firmware **6.0.1.50**) with the **Resideo Native** Home Assistant integration,
 using all three supported write pathways:
 
 | Home Assistant action | Protocol client path | Reported real-device result |
@@ -32,9 +31,9 @@ using all three supported write pathways:
 | Choose follow schedule / temporary / permanent hold | `set_hold` | Thermostat responds to hold/preset commands |
 
 **Hardware identification:** The Home Assistant device registry identifies
-manufacturer **Resideo / Honeywell Home**, model **Jasper**, platform
+manufacturer **Resideo / Honeywell Home**, internal model **Jasper**, platform
 `resideo_native`. Its `sw_version` property is null; firmware is therefore
-**not known** and is not represented as verified. This is the owner's
+**not populated by Home Assistant**. The owner directly reports the physical Lyric T6 Pro firmware as **6.0.1.50**; this version was not independently recovered from the integration. This is the owner's
 first-hand confirmation, not an independently logged test run or firmware
 matrix. Original reports and documentation do not justify extending the
 verification claim to every T6/T6R device, every firmware version, cooling

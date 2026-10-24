@@ -3,9 +3,9 @@
 ## 0.1.7 — HACS physical-write verification documentation
 
 - Document maintainer-confirmed real-device command acceptance on a physical
-  Jasper thermostat for HVAC mode, target setpoint and hold/preset controls.
+  Lyric T6 Pro thermostat (internal model Jasper, owner-reported firmware 6.0.1.50) for HVAC mode, target setpoint and hold/preset controls.
 - Explicitly distinguish **Jasper** hardware evidence from unverified other
-  devices and firmware builds; firmware version is not surfaced by HA.
+  devices and firmware builds; firmware 6.0.1.50 is owner-reported and not surfaced by HA.
 - Remove obsolete claims that **no** real thermostat command testing exists.
 - Preserve existing climate/protocol code; no changes to motor, heating,
   login, setpoint, schedule or other runtime behavior.
