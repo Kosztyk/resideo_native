@@ -20,9 +20,24 @@ jobs:
       - name: Validate repository packaging
         run: python tools/check_repository.py
       - name: Run packaging tests
-        run: python -m unittest discover -s tests -v
+        run: |
+          python -m unittest discover -s tests -p 'test_packaging.py' -v
+          python -m unittest discover -s tests -p 'test_review_evidence.py' -v
       - name: Compile integration Python code
         run: python -m compileall -q custom_components
+
+  runtime-tests:
+    name: Protocol and Home Assistant 2026.10.2 tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install pinned Home Assistant test harness
+        run: python -m pip install -r requirements-test.txt
+      - name: Run offline regression suite
+        run: python -m pytest -q
 
   hacs:
     name: HACS Validation

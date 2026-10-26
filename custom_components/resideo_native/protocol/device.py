@@ -7,6 +7,7 @@ from math import isfinite
 from typing import Any
 
 from .errors import CommandError, InvalidResponse
+from .hot_water import HotWaterZone
 
 # APK framework/utils/r.java and p373qi/d.java g()/u(): these legacy
 # models exchange absolute temperatures in Fahrenheit. thermostat.units is
@@ -89,6 +90,19 @@ class Thermostat:
     def online(self) -> bool:
         # Missing status is not interpreted as explicitly disconnected.
         return self.raw.get("isAlive") is not False
+
+    @property
+    def hot_water(self) -> HotWaterZone | None:
+        """Expose a nested DHW zone without adding it to the thermostat list."""
+        zone = self.raw.get("dhwZone")
+        if not isinstance(zone, dict) or not isinstance(zone.get("dhw"), dict):
+            return None
+        identifier = zone.get("deviceId") or zone.get("deviceID")
+        if not isinstance(identifier, str) or not identifier.strip():
+            return None
+        if str(zone.get("deviceClass", "DHW")).casefold() != "dhw":
+            return None
+        return HotWaterZone(self, zone)
 
     @property
     def current_temperature(self) -> float | None:

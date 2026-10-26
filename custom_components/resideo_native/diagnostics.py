@@ -24,6 +24,15 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
                 "hold_status": device.values.get("thermostatSetpointStatus"),
                 "temperature_limits_heat": device.temperature_limits("heat"),
                 "temperature_limits_cool": device.temperature_limits("cool"),
+                "hot_water": (
+                    {
+                        **device.hot_water.attributes,
+                        "online": device.hot_water.online,
+                        "control_supported": device.hot_water.can_control,
+                    }
+                    if device.hot_water
+                    else None
+                ),
             }
             for device in (coordinator.data or {}).values()
         ],

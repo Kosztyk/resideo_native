@@ -27,6 +27,7 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 ## Features
 
 - One `climate` entity per supported thermostat.
+- Jasper/T6R domestic hot water: reported on/off state, follow schedule, always on/off, and 30/60/90-minute boost controls when a nested `dhwZone` is present.
 - Current temperature, target temperature, and device-reported temperature limits.
 - Celsius/Fahrenheit handling, including the Jasper/T6 API conversion corrected in version 0.1.2.
 - Heating, cooling, off, and automatic heat/cool modes when reported by the device. Heating-only models are not given cooling controls.
@@ -36,6 +37,84 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 - Shared account polling, automatic discovery of newly returned thermostats, and unavailable status for offline devices.
 - Automatic token refresh and reauthentication support.
 - English and Romanian setup text, plus light/dark brand icons and logos.
+
+## Domestic hot water (Jasper / T6R)
+
+Version **0.1.8** adds support for the nested `dhwZone` returned by the legacy
+`api/v4/locations` response, as requested in issue #2. Only thermostats that
+actually report this zone receive the additional entities. They are attached to
+the existing thermostat device and use its shared account refresh.
+
+- **Hot water** (`water_heater`): operating mode and control.
+- **Hot water state** (`sensor`): the API's actual `dhwState` (`on` or `off`),
+  including when a schedule is selected.
+
+| Hot-water mode | Meaning |
+| --- | --- |
+| Follow schedule (`auto`) | Explicitly resume the existing hot-water schedule |
+| Always on (`on`) | Permanent hot-water on command |
+| Always off (`off`) | Permanent hot-water off command |
+| Boost (`boost`) | Selecting this mode starts a 30-minute timed boost |
+
+**Follow schedule is a mode, not an on/off reading.** For example, the water
+heater can be in `auto` while the separate state sensor reports `off`. The state
+sensor reports the cloud's hot-water state; it does not independently measure
+whether the boiler is firing. Both entities expose `status`, `boost_duration`,
+`vacation_hold_enabled`, `geo_boost_enabled`, `next_period_time`,
+`schedule_day`, and `schedule_period` when the API supplies them. `boost_duration`
+is the reported API field, not a locally calculated remaining-time countdown.
+Unknown or vacation hold modes are not guessed; their reported status remains
+visible in the attributes.
+
+For a different boost duration, use **Developer Tools → Actions → Resideo Native:
+Boost hot water**, target the hot-water entity and select **30, 60 or 90 minutes**.
+The same action can be used in automations:
+
+```yaml
+action: resideo_native.boost_hot_water
+target:
+  entity_id: water_heater.your_thermostat_hot_water
+data:
+  duration: 60
+```
+
+Use your actual entity ID. **Cancel hot-water boost** sends the app's temporary
+off command:
+
+```yaml
+action: resideo_native.cancel_hot_water_boost
+target:
+  entity_id: water_heater.your_thermostat_hot_water
+```
+
+To explicitly return to the schedule, choose **Follow schedule** in the entity,
+or call:
+
+```yaml
+action: water_heater.set_operation_mode
+target:
+  entity_id: water_heater.your_thermostat_hot_water
+data:
+  operation_mode: auto
+```
+
+Turning the water-heater entity off sends **permanent off**, which is distinct
+from canceling a boost. No DHW temperature reading, setpoint, schedule editor,
+or vacation/geo-boost configuration is implemented: those measurements or
+commands have not been established for this zone.
+
+Commands were traced in the supplied Resideo Android **6.21.1** app; request
+routes, JSON bodies, parent-device addressing and symbol references are in
+[docs/HOT_WATER_PROTOCOL.md](docs/HOT_WATER_PROTOCOL.md). They have been tested
+against a simulated server and Home Assistant, **not on a physical hot-water
+system**. The first live Jasper/T6R DHW test is still needed. Other model types
+with a compatible nested zone are exposed for reading, with control disabled.
+No commands are sent merely by installing this update or discovering a zone.
+
+To install this local update, replace the complete
+`/config/custom_components/resideo_native/` folder and restart Home Assistant.
+Your existing account entry and thermostat entities are retained; no new login
+is required unless Resideo independently requires reauthentication.
 
 ## Requirements
 
@@ -248,29 +327,51 @@ For an issue report, include the integration version, Home Assistant version, th
 ## Current limitations
 
 - Cloud polling; SignalR push updates are not implemented.
-- No schedule editor, vacation creation, geofencing, hot-water controls, fan controls, or installer settings.
+- No schedule editor, vacation creation, geofencing configuration, hot-water temperature controls, fan controls, or installer settings.
 - No automatic browser callback helper or extension is included in the current release.
 - The maintainer confirms physical command acceptance on their **Jasper** device; firmware `6.0.1.50` is reported by the owner, although the Home Assistant device registry does not expose it. Write behavior has not been individually verified on other models or firmware builds.
 - Resideo service or authentication changes can require integration updates.
 
+## Jasper/T6R hot-water hardware verification (user report)
+
+The issue #2 requester reports installing **0.1.8 over 0.1.7**, restarting
+**Home Assistant 2026.10.4**, and testing on **Jasper/T6R**. The integration
+loaded without log errors. Both hot-water entities appeared, and state and
+hold/boost/schedule attributes matched the raw `dhwZone` data.
+
+| Command | User-confirmed result in Resideo app and physical thermostat |
+| --- | --- |
+| `on` | Hot water On, `PermanentHold`; always on |
+| `off` | Hot water Off, `PermanentHold`; permanently off |
+| `auto` | `NoHold`; schedule mode restored |
+
+Home Assistant read each change back within a few seconds. This is the
+requester's first-hand hardware report, supplied by the maintainer; it is
+separate from automated tests. Firmware was not supplied. **Timed boost
+(30/60/90 minutes) and boost cancellation remain unverified on hardware.**
+
 ## Development and validation
 
-For **v0.1.6**, the public repository includes automated HACS, Hassfest and
-packaging checks. The CI workflow validates repository layout, manifest fields,
-Python syntax and JSON metadata.
+This **0.1.8 release** includes the recovered protocol and Home Assistant
+runtime regression suite, plus DHW coverage. The runtime harness is pinned to
+Home Assistant **2026.10.2** and requires **Python 3.14**.
 
-Run these packaging checks from the repository root:
+Run the complete offline suite from the repository root:
 
 ```sh
-python3 tools/check_repository.py
-python3 -m unittest discover -s tests -v
-python3 -m compileall -q custom_components
+python3.14 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-test.txt
+python -m pytest -q
+python tools/check_repository.py
+python -m compileall -q custom_components
 ```
 
-**Scope:** These are packaging and syntax checks, not Resideo-cloud integration
-tests. Earlier versions described 44 automated protocol/behavior tests on
-Home Assistant 2026.10.2. Their test sources are not in this public
-repository, so those historical results are not reproduced here.
+The HTTP tests contact only a local simulated service. They verify request
+serialization and error behavior; they do not establish real Resideo-cloud
+command acceptance or physical hot-water operation. Existing maintainer-reported
+climate testing and the user-reported DHW hardware checks remain distinct from
+automated testing. Boost and cancellation still need hardware confirmation.
 
 See [validation notes](VALIDATION.md) and the [changelog](CHANGELOG.md)
 for publishing details and testing limitations.

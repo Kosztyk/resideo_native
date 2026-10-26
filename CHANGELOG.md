@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.8 — Jasper/T6R domestic hot water
+
+- Discover nested `dhwZone` data and add a hot-water entity plus an on/off state sensor to the parent thermostat device.
+- Add follow schedule, permanent on/off and 30/60/90-minute boost/cancel commands traced in Resideo Android 6.21.1.
+- Use the parent thermostat ID for the mobile API DHW routes; keep all thermostat climate behavior and shared polling.
+- Expose the reported hold, boost, vacation, geo-boost and schedule fields without inventing water temperatures or optimistic command results.
+- Disable DHW writes for untraced models; reject missing or offline zones and unsupported durations before sending.
+- Restore the earlier protocol/HA regression tests and add DHW protocol, service, discovery and lifecycle tests.
+- Align the diagnostic version constant with the manifest.
+- User confirms DHW readings and on/off/auto against the app and physical
+  Jasper/T6R on HA 2026.10.4; boost and cancellation await hardware testing.
+
 ## 0.1.7 — HACS physical-write verification documentation
 
 - Document maintainer-confirmed real-device command acceptance on a physical

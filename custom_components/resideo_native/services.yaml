@@ -1,0 +1,22 @@
+boost_hot_water:
+  target:
+    entity:
+      integration: resideo_native
+      domain: water_heater
+  fields:
+    duration:
+      default: 30
+      example: 30
+      selector:
+        select:
+          options:
+            - "30"
+            - "60"
+            - "90"
+          mode: dropdown
+
+cancel_hot_water_boost:
+  target:
+    entity:
+      integration: resideo_native
+      domain: water_heater

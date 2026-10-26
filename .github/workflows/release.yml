@@ -1,4 +1,4 @@
-name: Publish Resideo Native v0.1.7
+name: Publish Resideo Native v0.1.8
 
 on:
   workflow_run:
@@ -35,8 +35,8 @@ jobs:
             exit 0
           fi
           VERSION="$(python -c 'import json; print(json.load(open("custom_components/resideo_native/manifest.json"))["version"])')"
-          if [[ "$VERSION" != "0.1.7" ]]; then
-            echo "Auto-publishing is restricted to v0.1.7."
+          if [[ "$VERSION" != "0.1.8" ]]; then
+            echo "Auto-publishing is restricted to v0.1.8."
             exit 0
           fi
           if gh release view "v$VERSION" >/dev/null 2>&1; then
@@ -46,5 +46,5 @@ jobs:
           gh release create "v$VERSION" \
             --target "$VALIDATED_SHA" \
             --title "Resideo Native v$VERSION" \
-            --notes-file RELEASE_NOTES_0.1.7.md \
+            --notes-file RELEASE_NOTES_0.1.8.md \
             --latest

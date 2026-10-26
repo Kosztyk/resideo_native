@@ -75,6 +75,52 @@
           }
         }
       }
+    },
+    "water_heater": {
+      "hot_water": {
+        "name": "Hot water",
+        "state": {
+          "auto": "Follow schedule",
+          "on": "Always on",
+          "off": "Always off",
+          "boost": "Boost (30 minutes)"
+        },
+        "state_attributes": {
+          "operation_mode": {
+            "state": {
+              "auto": "Follow schedule",
+              "on": "Always on",
+              "off": "Always off",
+              "boost": "Boost (30 minutes)"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "hot_water_state": {
+        "name": "Hot water state",
+        "state": {
+          "on": "On",
+          "off": "Off"
+        }
+      }
+    }
+  },
+  "services": {
+    "boost_hot_water": {
+      "name": "Boost hot water",
+      "description": "Start a timed hot-water boost for the selected duration.",
+      "fields": {
+        "duration": {
+          "name": "Duration (minutes)",
+          "description": "30, 60 or 90 minutes; defaults to 30."
+        }
+      }
+    },
+    "cancel_hot_water_boost": {
+      "name": "Cancel hot-water boost",
+      "description": "Send the app's temporary hot-water off command. Choose Follow schedule to explicitly resume the schedule."
     }
   }
 }

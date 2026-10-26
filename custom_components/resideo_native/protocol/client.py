@@ -27,6 +27,7 @@ from .errors import (
     InvalidResponse,
     RateLimited,
 )
+from .hot_water import DHW_BOOST_MINUTES
 
 BASE_URL = "https://lyric.alarmnet.com/"
 # Public subscription identifier shipped with the Resideo app; not a user's key.
@@ -212,3 +213,50 @@ class NativeClient:
             if status == "TemporaryHold" and isinstance(next_period, str) and next_period:
                 body["HoldUntil"] = next_period
             await self._request("PUT", self._path(device, "hold"), body)
+
+    def _hot_water_device(self, device_id: str) -> Thermostat:
+        device = self._device(device_id)
+        zone = device.hot_water
+        if zone is None:
+            raise CommandError("This thermostat has no hot-water zone")
+        if not zone.online:
+            raise CommandError("The hot-water zone is offline")
+        if not zone.can_control:
+            raise CommandError("Hot-water control is supported only for legacy Jasper thermostats")
+        return device
+
+    async def set_hot_water_mode(self, device_id: str, mode: str) -> None:
+        """Use the app's permanent switch or resume-schedule command.
+
+        The path uses the PARENT thermostat ID, not dhwZone.deviceId.
+        APK 6.21.1: Ce/c.Q0, Ce/c.m, ta/h.N3 and ta/h.onActivityResult.
+        """
+        async with self._command_lock:
+            if mode not in ("auto", "on", "off"):
+                raise CommandError("Unsupported hot-water operating mode")
+            device = self._hot_water_device(device_id)
+            if mode == "auto":
+                suffix, body = "dhw/scheduleStatus", {"scheduleStatus": "Resume"}
+            else:
+                suffix = "dhw/systemSwitch"
+                body = {"systemSwitch": "Heat" if mode == "on" else "Off"}
+            await self._request("PUT", self._path(device, suffix, "v3/"), body)
+
+    async def boost_hot_water(self, device_id: str, duration: int = 30) -> None:
+        """Start a timed boost; minutes are encoded as boostTime, not boostDuration."""
+        async with self._command_lock:
+            if type(duration) is not int or duration not in DHW_BOOST_MINUTES:
+                raise CommandError("Hot-water boost duration must be 30, 60 or 90 minutes")
+            device = self._hot_water_device(device_id)
+            await self._request(
+                "PUT", self._path(device, "dhw/state", "v3/"),
+                {"dhwState": "On", "boostTime": duration},
+            )
+
+    async def cancel_hot_water_boost(self, device_id: str) -> None:
+        """Send the app's turnHotWaterOff request, distinct from permanent off."""
+        async with self._command_lock:
+            device = self._hot_water_device(device_id)
+            await self._request(
+                "PUT", self._path(device, "dhw/state", "v3/"), {"dhwState": "Off"}
+            )

@@ -75,6 +75,52 @@
           }
         }
       }
+    },
+    "water_heater": {
+      "hot_water": {
+        "name": "Apă caldă",
+        "state": {
+          "auto": "Urmează programul",
+          "on": "Pornit permanent",
+          "off": "Oprit permanent",
+          "boost": "Boost (30 de minute)"
+        },
+        "state_attributes": {
+          "operation_mode": {
+            "state": {
+              "auto": "Urmează programul",
+              "on": "Pornit permanent",
+              "off": "Oprit permanent",
+              "boost": "Boost (30 de minute)"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "hot_water_state": {
+        "name": "Stare apă caldă",
+        "state": {
+          "on": "Pornit",
+          "off": "Oprit"
+        }
+      }
+    }
+  },
+  "services": {
+    "boost_hot_water": {
+      "name": "Boost apă caldă",
+      "description": "Pornește temporar apa caldă pentru durata selectată.",
+      "fields": {
+        "duration": {
+          "name": "Durată (minute)",
+          "description": "30, 60 sau 90 de minute; implicit 30."
+        }
+      }
+    },
+    "cancel_hot_water_boost": {
+      "name": "Anulează boost apă caldă",
+      "description": "Trimite comanda de oprire temporară a apei calde din aplicație. Alege Urmează programul pentru a relua explicit programul."
     }
   }
 }

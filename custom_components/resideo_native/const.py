@@ -2,7 +2,7 @@
 
 DOMAIN = "resideo_native"
 NAME = "Resideo Native"
-VERSION = "0.1.6"
+VERSION = "0.1.8"
 CONF_TOKEN = "token"
 CONF_COUNTRY = "country"
 CONF_POLL_INTERVAL = "poll_interval"

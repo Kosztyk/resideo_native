@@ -1,23 +1,56 @@
-# Validation scope — Resideo Native v0.1.7
+# Validation scope — Resideo Native v0.1.8
 
-## Automated GitHub checks
+## Local automated validation — 26 October 2026
 
-The `.github/workflows/validate.yml` GitHub Actions workflow runs:
+The complete included suite passed on **Home Assistant 2026.10.2** with
+**Python 3.14.8**: **102 tests passed**, including **44 new DHW tests** and
+55 successful subtests across the suite. Repository packaging checks and
+Python compilation also passed.
 
-- HACS validation without ignored HACS checks;
-- Home Assistant Hassfest integration validation;
-- local packaging checks, Python compilation and metadata unit tests.
+DHW coverage includes nested discovery on the second of two thermostats,
+reported state/hold fields, exact mobile API paths and JSON, parent-device
+addressing, all three boost durations, cancel versus permanent off, invalid
+input rejection, offline/missing zones, failed/timed-out writes, readback,
+standard and custom HA actions, dynamic discovery, unload/reload, read-only
+handling for untraced models and diagnostics redaction.
 
-To run the bundled static checks:
+The original login, cookies, token renewal, thermostat temperature conversion,
+climate actions, setup, options and reauthentication regression tests are also
+included and pass. HTTP protocol tests contact only a local simulated server;
+no live account or thermostat is used by these tests.
+
+To reproduce with Python 3.14:
 
 ```sh
-python3 tools/check_repository.py
-python3 -m unittest discover -s tests -v
-python3 -m compileall -q custom_components
+python3.14 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-test.txt
+python -m pytest -q
+python tools/check_repository.py
+python -m compileall -q custom_components
 ```
 
-These packaging checks **do not test** real Resideo authentication,
-thermostat command acceptance, temperature consistency or HA runtime behavior.
+The GitHub validation workflow runs packaging, the pinned runtime suite,
+HACS and Hassfest. Publication is gated on successful main-branch validation.
+See the repository Actions page for the current run results.
+
+## Jasper/T6R hot-water hardware verification (user report)
+
+The issue #2 requester reports installing **0.1.8 over 0.1.7**, restarting
+**Home Assistant 2026.10.4**, and testing on **Jasper/T6R**. The integration
+loaded without log errors. Both hot-water entities appeared, and state and
+hold/boost/schedule attributes matched the raw `dhwZone` data.
+
+| Command | User-confirmed result in Resideo app and physical thermostat |
+| --- | --- |
+| `on` | Hot water On, `PermanentHold`; always on |
+| `off` | Hot water Off, `PermanentHold`; permanently off |
+| `auto` | `NoHold`; schedule mode restored |
+
+Home Assistant read each change back within a few seconds. This is the
+requester's first-hand hardware report, supplied by the maintainer; it is
+separate from automated tests. Firmware was not supplied. **Timed boost
+(30/60/90 minutes) and boost cancellation remain unverified on hardware.**
 
 ## Hardware write verification (maintainer statement)
 
@@ -43,12 +76,14 @@ may be supplied separately for HACS review.
 These real-device checks are distinct from Python/HACS/Hassfest CI and should
 not be interpreted as coverage of physical hardware by automated tests.
 
-## Historical tests
+## Recovered historical suite
 
-An earlier README described 44 automated tests with Home Assistant 2026.10.2,
-but the full test suite and referenced `requirements-test.txt`, `docs/` and
-`tests/test_protocol.py` were not included in the published 0.1.5 repository.
-The public checks added for this release cover packaging only.
+The uploaded 0.1.7 repository snapshot contained packaging tests only. The
+missing 0.1.5 protocol and HA regression sources were recovered from the prior
+archive supplied in this project and included in this local build, with their
+version expectation updated to 0.1.8. They run against the new source together
+with the DHW tests; historical pass counts are not used as evidence for this
+build. The current result is the fresh local run described above.
 
 ## Safety
 

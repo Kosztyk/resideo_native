@@ -12,7 +12,7 @@ from .const import CONF_TOKEN
 from .coordinator import ResideoCoordinator
 from .protocol import AuthenticationError, NativeClient, ResideoAuth, Token
 
-PLATFORMS = [Platform.CLIMATE]
+PLATFORMS = [Platform.CLIMATE, Platform.SENSOR, Platform.WATER_HEATER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
