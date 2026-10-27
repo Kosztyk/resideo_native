@@ -15,6 +15,8 @@ developed on 27 October 2026:
 - Record the requester's verified 0.3.1 heating/DHW schedule and Off tests on
   T6H700RW4011 / firmware 6.0.1.50 / HA OS 2026.10.4, plus a working DHW boost.
 - Document native Off frost protection without adding a frost control.
+- Declare the HTTP component used by the editor's static asset registration,
+  correcting the dependency issue detected by the release's Hassfest run.
 
 - Follow the Android app's final legacy serializer: `sleepMode.triggers` contains
   the sleep start/end and all seven native day names. 0.3.0 incorrectly sent the

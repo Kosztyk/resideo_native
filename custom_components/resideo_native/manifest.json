@@ -2,7 +2,8 @@
   "domain": "resideo_native",
   "name": "Resideo Native",
   "after_dependencies": [
-    "frontend"
+    "frontend",
+    "http"
   ],
   "codeowners": [
     "@Kosztyk"
