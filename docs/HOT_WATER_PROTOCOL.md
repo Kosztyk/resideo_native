@@ -116,8 +116,9 @@ The user-facing `boost` mode starts 30 minutes. The
 
 The API payload establishes neither a hot-water temperature measurement nor a
 temperature target, so no water-temperature controls or measurements are
-fabricated. No away-mode, vacation, schedule editing or geo-boost setting
-commands are implemented. Those reported fields remain readable attributes.
+fabricated. No away-mode, vacation or geo-boost setting commands are implemented.
+Those reported fields remain readable attributes. Heating/DHW schedule actions
+and the visual editor added after 0.1.8 are documented in [SCHEDULES.md](SCHEDULES.md).
 
 ## Verification limits
 
@@ -129,9 +130,11 @@ Assistant actions on **2026.10.2**.
 
 The issue #2 requester confirmed state/attributes and the `on`, `off` and
 `auto` commands against the Resideo app and physical Jasper/T6R thermostat on
-Home Assistant 2026.10.4. See [VALIDATION.md](../VALIDATION.md). Timed boost and
-boost cancellation remain unverified on hardware. No maintainer-side live DHW
-write was performed.
+Home Assistant 2026.10.4. The 0.3.1 report additionally confirms a boost started
+from HA and ran normally, auto/off changes and DHW schedule edit/clear/restore.
+The boost duration was not specified; individual durations and explicit boost
+cancellation were not separately confirmed. See
+[the hardware evidence](TESTING_2026-10-27.md). The maintainer has no DHW hardware.
 Writes are enabled only for the legacy `Jasper` model;
 other compatible nested-zone payloads remain readable without write features.
 

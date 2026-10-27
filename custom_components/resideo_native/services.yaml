@@ -20,3 +20,117 @@ cancel_hot_water_boost:
     entity:
       integration: resideo_native
       domain: water_heater
+
+get_heating_schedule:
+  name: Get heating schedule
+  description: Fetch the current cloud schedule and revision. Times use the thermostat's local time and temperatures use its display unit.
+  target:
+    entity:
+      integration: resideo_native
+      domain: climate
+set_heating_schedule:
+  name: Set heating schedule
+  description: Replace selected days of a heating-only Jasper schedule. Keep at least one populated weekday and weekend day; other days may be empty. Fetch the current revision first. Supply all seven day lists for a new schedule.
+  target:
+    entity:
+      integration: resideo_native
+      domain: climate
+  fields:
+    expected_revision:
+      name: Expected revision
+      required: true
+      selector:
+        text:
+    days:
+      name: Days and periods
+      required: true
+      selector:
+        object:
+    confirm_conversion:
+      name: Confirm geofence conversion
+      description: Explicitly switch this device from geofence to a timed schedule. All seven days are required.
+      required: false
+      default: false
+      selector:
+        boolean:
+set_heating_schedule_enabled:
+  name: Turn heating schedule on/off
+  description: Turn the native heating schedule On/Off through Schedule/Status, independently of manual holds. Keeps the saved routine.
+  target:
+    entity:
+      integration: resideo_native
+      domain: climate
+  fields:
+    enabled:
+      name: Schedule on
+      required: true
+      selector:
+        boolean:
+    expected_revision:
+      name: Expected revision
+      required: true
+      selector:
+        text:
+set_heating_schedule_mode:
+  name: Set heating schedule type
+  description: Select Timed or Geofence for one Jasper thermostat after explicit confirmation. Phone geofencing remains in the app.
+  target:
+    entity:
+      integration: resideo_native
+      domain: climate
+  fields:
+    mode:
+      name: Schedule type
+      required: true
+      selector:
+        select:
+          options:
+            - Timed
+            - Geofence
+    expected_revision:
+      name: Expected revision
+      required: true
+      selector:
+        text:
+    confirm_change:
+      name: Confirm type change
+      required: true
+      default: false
+      selector:
+        boolean:
+    days:
+      name: Timed days
+      required: false
+      selector:
+        object:
+    geofence:
+      name: Geofence temperatures and sleep
+      description: Home/Away temperatures and optional sleep start_time, end_time and temperature. Set sleep to null to remove it.
+      required: false
+      selector:
+        object:
+get_hot_water_schedule:
+  name: Get hot-water schedule
+  description: Fetch the current cloud schedule and revision without changing it.
+  target:
+    entity:
+      integration: resideo_native
+      domain: water_heater
+set_hot_water_schedule:
+  name: Set hot-water schedule
+  description: Replace selected days using time and On/Off transitions. An empty day list clears that day of an existing routine. Fetch the current revision first. Supply all seven days to create a new schedule.
+  target:
+    entity:
+      integration: resideo_native
+      domain: water_heater
+  fields:
+    expected_revision:
+      name: Expected revision
+      required: true
+      selector:
+        text:
+    days:
+      name: Days and periods
+      required: true
+      selector:
+        object:

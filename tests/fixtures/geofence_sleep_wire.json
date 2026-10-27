@@ -1,0 +1,19 @@
+{
+  "scheduleType": "Geofence",
+  "deviceIDs": ["T6R-parent"],
+  "geoFenceSchedule": {
+    "homePeriod": {"heatSetPoint": 77.0, "coolSetPoint": 0},
+    "awayPeriod": {"heatSetPoint": 77.0, "coolSetPoint": 0},
+    "sleepMode": {
+      "triggers": [
+        {
+          "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "startTime": "22:00:00",
+          "endTime": "09:00:00"
+        }
+      ],
+      "heatSetPoint": 73.4,
+      "coolSetPoint": 0
+    }
+  }
+}

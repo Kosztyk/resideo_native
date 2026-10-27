@@ -1,4 +1,4 @@
-name: Publish Resideo Native v0.1.8
+name: Publish Resideo Native v0.3.1
 
 on:
   workflow_run:
@@ -8,11 +8,17 @@ on:
       - completed
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: publish-resideo-native-0.3.1
+  cancel-in-progress: false
 
 jobs:
   publish:
     name: Release after successful main validation
+    permissions:
+      contents: write
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
@@ -35,16 +41,34 @@ jobs:
             exit 0
           fi
           VERSION="$(python -c 'import json; print(json.load(open("custom_components/resideo_native/manifest.json"))["version"])')"
-          if [[ "$VERSION" != "0.1.8" ]]; then
-            echo "Auto-publishing is restricted to v0.1.8."
+          if [[ "$VERSION" != "0.3.1" ]]; then
+            echo "Auto-publishing is restricted to the authorized v0.3.1 release."
             exit 0
           fi
           if gh release view "v$VERSION" >/dev/null 2>&1; then
             echo "Release already published."
             exit 0
           fi
+          NOTES="$RUNNER_TEMP/resideo-release-notes.md"
+          cp "RELEASE_NOTES_$VERSION.md" "$NOTES"
+          cat >> "$NOTES" <<EOF
+
+          ## Release validation
+
+          All five validation jobs completed successfully before publication:
+          packaging, Python/HA tests, JavaScript/browser tests, HACS and Hassfest.
+
+          - Validated commit: https://github.com/${{ github.repository }}/commit/$VALIDATED_SHA
+          - Validation run: ${{ github.event.workflow_run.html_url }}
+          EOF
+          ARCHIVE="$RUNNER_TEMP/resideo-native-$VERSION-source.zip"
+          git archive --format=zip --prefix="resideo-native-$VERSION/" \
+            --output="$ARCHIVE" "$VALIDATED_SHA"
+          (cd "$RUNNER_TEMP" && sha256sum "resideo-native-$VERSION-source.zip" \
+            > "resideo-native-$VERSION-source.zip.sha256")
           gh release create "v$VERSION" \
+            "$ARCHIVE" "$ARCHIVE.sha256" \
             --target "$VALIDATED_SHA" \
             --title "Resideo Native v$VERSION" \
-            --notes-file RELEASE_NOTES_0.1.8.md \
+            --notes-file "$NOTES" \
             --latest

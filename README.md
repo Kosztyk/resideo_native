@@ -10,13 +10,14 @@ This is an independent community integration for the legacy Resideo / Honeywell 
 
 > **Hardware-tested write controls:** The maintainer confirms successful thermostat operation using this Home Assistant integration on a physical **Honeywell Home Lyric T6 Pro** thermostat (internally reported as **Jasper** by Home Assistant), including HVAC mode, target temperature and hold/preset commands. The owner reports **firmware 6.0.1.50** from the physical thermostat; Home Assistant separately reports the internal model as `Jasper` and leaves `sw_version` blank. This confirmation is limited to the actual device tested; other model/firmware combinations remain unverified. Offline packaging checks cannot independently prove physical command acceptance. See [VALIDATION.md](VALIDATION.md).
 
-**Quick links:** [Installation](#installation) · [Retrieve the callback URL](#browser-sign-in) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
+**Quick links:** [Installation](#installation) · [Schedule editor](#schedule-entities-and-editor-031) · [Testing evidence](docs/TESTING_2026-10-27.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
 ## Compatibility
 
 | Device or service | Support |
 | --- | --- |
 | Honeywell Home Lyric T6 Pro (internally `Jasper`), firmware `6.0.1.50` | Maintainer reports successful physical operation of mode, setpoint and hold commands | 
+| Honeywell Home Lyric T6R `T6H700RW4011` (internally `Jasper`), firmware `6.0.1.50`, UK/EMEA | Requester confirms heating/DHW schedule reads, edits, deletion/restoration, DHW boost and real HVAC Off on HA OS 2026.10.4; see [testing evidence](docs/TESTING_2026-10-27.md) |
 | Other European Lyric T6 / T6R variants on the legacy Resideo Smart Home backend | Discovered/supported by code; device/firmware write behavior requires separate verification |
 | Other thermostats using the same legacy API | May work; not individually verified |
 | First Alert / Auth0 / Titan-only accounts or devices | Not supported |
@@ -37,6 +38,65 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 - Shared account polling, automatic discovery of newly returned thermostats, and unavailable status for offline devices.
 - Automatic token refresh and reauthentication support.
 - English and Romanian setup text, plus light/dark brand icons and logos.
+- Read/edit heating and DHW cloud schedules through response actions or the visual editor, with backups, revision checks and bounded readback.
+- Visible schedule On/Off, Geofencing setup and optional sidebar controls on supported thermostat devices.
+
+## Schedule entities and editor (0.3.1)
+
+Open **Settings → Devices & services → Resideo Native → your thermostat**.
+
+| Entity | Purpose |
+| --- | --- |
+| **Heating schedule** (`switch`) | Native schedule On/Off; independent of manual holds |
+| **Switch to Geofencing** (`switch`) | Right/On opens Geofencing setup; left/Off opens timed setup |
+| **Add scheduler to sidebar** (`switch`) | Optional shared shortcut, Off by default; saved per account |
+| **Schedule editor** (`sensor`) | Opens the full schedule page for this thermostat |
+
+**Switch to Geofencing is a left/right switch.** The old Press entity is removed
+on upgrade. Its state follows the cloud's schedule type: On for Geofence and Off
+for Timed. Schedule enabled/disabled remains the separate Heating schedule switch.
+
+- **On:** Home/Away popup → optional **Create Sleep Settings** → **Review & save**
+  → confirm → **Save to Resideo**.
+- **Off:** timed-week popup → edit/import your periods → **Review & save**
+  → confirm → **Save to Resideo**.
+- **Cancel:** closes the popup; the cloud mode and switch state remain unchanged.
+
+The popup stays over the current HA page. No command is sent when it opens or
+while a draft is edited. The switch updates after confirmed cloud readback.
+Missing profile values and omitted timed routines receive no invented defaults.
+Export a timed backup before changing type; inactive routines may be omitted by
+Resideo. Sleep start/end and night temperature support overnight periods. The
+same create/edit/remove sleep controls are available in the existing editor,
+including **Edit Geofencing settings** for an already active profile.
+
+Version **0.3.1** corrects the sleep request format from 0.3.0: the final app
+serializer sends a trigger array with all seven days and the sleep times.
+Readback checks day coverage as well as times and temperature. See
+[the protocol investigation](docs/SLEEP_PROTOCOL.md).
+
+Replace the complete integration folder, restart HA and refresh the browser.
+Confirm **Editor 0.3.1**. The editor entity, Configure options and optional sidebar
+remain available. Sidebar-only changes preserve poll/default-hold values and do
+not reload thermostat controls; thermostats sharing an account show one preference.
+
+Mode is read at startup and once per minute for each supported thermostat, as
+well as after schedule action readback. Phone registration/location permissions
+remain in the official app. Direct switch services have no interactive browser;
+they provide a setup link and leave the cloud mode unchanged. Automations can
+use `set_heating_schedule_mode` with explicit values, revision and confirmation.
+
+Existing heating/DHW period editing, backups, revision checks and bounded GET
+readback are retained. No PUT is automatically replayed. DHW times follow the
+app's 10-minute grid. Heating period edits retain a populated weekday and weekend
+day; this minimum does not apply to native schedule On/Off.
+
+See [editor guide](docs/SCHEDULES.md), [switch and sleep tests](docs/MODE_SWITCH_TEST_PLAN.md),
+[sleep protocol](docs/SLEEP_PROTOCOL.md), and [validation](VALIDATION.md).
+The requester verified heating/DHW schedule actions on 0.3.1 and the maintainer
+reports successful Geofencing use. The requester's visual-editor/popup and
+Geofencing/sleep paths were not tested; specific live sleep acceptance remains
+unconfirmed. See [the evidence matrix](docs/TESTING_2026-10-27.md).
 
 ## Domestic hot water (Jasper / T6R)
 
@@ -99,19 +159,21 @@ data:
 ```
 
 Turning the water-heater entity off sends **permanent off**, which is distinct
-from canceling a boost. No DHW temperature reading, setpoint, schedule editor,
+from canceling a boost. No DHW temperature reading, setpoint,
 or vacation/geo-boost configuration is implemented: those measurements or
 commands have not been established for this zone.
 
 Commands were traced in the supplied Resideo Android **6.21.1** app; request
 routes, JSON bodies, parent-device addressing and symbol references are in
-[docs/HOT_WATER_PROTOCOL.md](docs/HOT_WATER_PROTOCOL.md). They have been tested
-against a simulated server and Home Assistant, **not on a physical hot-water
-system**. The first live Jasper/T6R DHW test is still needed. Other model types
+[docs/HOT_WATER_PROTOCOL.md](docs/HOT_WATER_PROTOCOL.md). The requester confirmed DHW readings and on/off/auto against the app and
+physical Jasper/T6R on HA 2026.10.4 with 0.1.8. The 0.3.1 report additionally
+confirms a boost started from HA, auto/off and DHW schedule changes including
+07:00 → 07:10, day clearing and restoration. Individual 30/60/90-minute durations
+and explicit boost cancellation were not separately reported. Other model types
 with a compatible nested zone are exposed for reading, with control disabled.
 No commands are sent merely by installing this update or discovering a zone.
 
-To install this local update, replace the complete
+To install this update manually, replace the complete
 `/config/custom_components/resideo_native/` folder and restart Home Assistant.
 Your existing account entry and thermostat entities are retained; no new login
 is required unless Resideo independently requires reauthentication.
@@ -281,7 +343,7 @@ Each discovered thermostat appears as a Home Assistant `climate` entity. Its nam
 | Temporary hold | Requests a temporary manual temperature override |
 | Permanent hold | Requests a manual override that remains until cleared |
 
-Manual temperature changes use **Temporary hold** by default. An active permanent hold remains permanent. Choose a different default in the integration's **Configure** options.
+Manual temperature changes use **Temporary hold** by default. An active permanent hold remains permanent. Choose a different default under **Integration settings** on the schedule editor page.
 
 In automatic heat/cool mode, set the low and high targets together. The integration validates device limits and deadband before sending them. When changing both HVAC mode and temperature, set the mode first, then set the temperature in a separate action.
 
@@ -293,12 +355,19 @@ For example, API values of `78.8` and `73.4` correspond to **26 °C current temp
 
 ### Options
 
-Open **Settings → Devices & services → Resideo Native → Configure**.
+Open **Settings → Devices & services → Resideo Native → Configure**, or
+**Integration settings** on the editor page. These are Home Assistant account
+options; saving them does not send a Resideo schedule command.
 
 | Option | Default | Allowed values |
 | --- | --- | --- |
 | Refresh interval | 60 seconds | 30–600 seconds |
 | Default hold for temperature changes | Temporary hold | Temporary or permanent hold |
+| Show Resideo schedules in the sidebar | Off | On/off; also available through **Add scheduler to sidebar** in the editor |
+
+Sidebar-only changes apply immediately without an integration reload. With
+multiple accounts, one shared shortcut is visible while any account enables it.
+The setting applies to Home Assistant users; it is not a per-browser preference.
 
 One account poll serves all its thermostats. After a command, the integration requests a fresh server update rather than assuming that the command succeeded.
 
@@ -327,7 +396,7 @@ For an issue report, include the integration version, Home Assistant version, th
 ## Current limitations
 
 - Cloud polling; SignalR push updates are not implemented.
-- No schedule editor, vacation creation, geofencing configuration, hot-water temperature controls, fan controls, or installer settings.
+- No vacation creation, phone geofence setup, hot-water temperature controls, fan controls, or installer settings.
 - No automatic browser callback helper or extension is included in the current release.
 - The maintainer confirms physical command acceptance on their **Jasper** device; firmware `6.0.1.50` is reported by the owner, although the Home Assistant device registry does not expose it. Write behavior has not been individually verified on other models or firmware builds.
 - Resideo service or authentication changes can require integration updates.
@@ -347,34 +416,47 @@ hold/boost/schedule attributes matched the raw `dhwZone` data.
 
 Home Assistant read each change back within a few seconds. This is the
 requester's first-hand hardware report, supplied by the maintainer; it is
-separate from automated tests. Firmware was not supplied. **Timed boost
-(30/60/90 minutes) and boost cancellation remain unverified on hardware.**
+separate from automated tests. A later schedule report lists thermostat firmware
+**6.0.1.50** and product code **T6H700RW4011**. On **0.3.1**, the same requester
+confirmed a hot-water boost started from HA and ran normally, auto/off mode
+changes, DHW schedule read/edit/clear/restore with verified readback, and real
+HVAC Off on both heating zones. The reported boost duration was not specified;
+the individual duration choices and explicit cancellation remain outside that
+report. See the [full evidence matrix and source comments](docs/TESTING_2026-10-27.md).
+
+## Frost protection
+
+Resideo documents integral **5°C frost protection in Off mode** for European
+T6/T6R thermostats. The T6H700RW4011 requester reports a fixed threshold, no
+frost settings page in the app, and successful real Off commands on both zones.
+The integration keeps the native Off command; it does not replace it with a
+5°C heat hold or add a frost switch. No live frost-threshold reading or
+activation test is claimed. See [Resideo's specification](https://homecomfort.resideo.com/sites/Romania/ro-RO/Pages/ProductGroup.aspx?cat=HW-TOEM&catpath=1.2.1.6.1&pid=Lyric+T6+Smart+Thermostat-18717%28HW-TOEM%29)
+and [the requester's confirmation](https://github.com/Kosztyk/resideo_native/issues/4#issuecomment-6454440807).
 
 ## Development and validation
 
-This **0.1.8 release** includes the recovered protocol and Home Assistant
-runtime regression suite, plus DHW coverage. The runtime harness is pinned to
-Home Assistant **2026.10.2** and requires **Python 3.14**.
-
-Run the complete offline suite from the repository root:
+The included regression suite uses Home Assistant **2026.10.2** and Python
+**3.14**. Editor logic and real-browser tests use Node **24** and Playwright
+with a **synthetic** local HA API, without real thermostat commands.
 
 ```sh
-python3.14 -m venv .venv
-. .venv/bin/activate
 python -m pip install -r requirements-test.txt
 python -m pytest -q
 python tools/check_repository.py
 python -m compileall -q custom_components
+npm ci
+npm test
+npx playwright install --with-deps chromium
+npm run test:browser
 ```
 
-The HTTP tests contact only a local simulated service. They verify request
-serialization and error behavior; they do not establish real Resideo-cloud
-command acceptance or physical hot-water operation. Existing maintainer-reported
-climate testing and the user-reported DHW hardware checks remain distinct from
-automated testing. Boost and cancellation still need hardware confirmation.
-
-See [validation notes](VALIDATION.md) and the [changelog](CHANGELOG.md)
-for publishing details and testing limitations.
+See [VALIDATION.md](VALIDATION.md) and [the 27 October test summary](docs/TESTING_2026-10-27.md)
+for local results and separately attributed physical evidence. The
+[validation workflow](https://github.com/Kosztyk/resideo_native/actions/workflows/validate.yml)
+runs packaging, Python/HA, JavaScript/browser, HACS and Hassfest checks.
+The release workflow publishes only after successful validation of the current
+main commit; the release notes link the exact run and commit.
 
 ## License and attribution
 

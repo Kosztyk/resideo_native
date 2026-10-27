@@ -31,6 +31,7 @@ def client():
     client.account_id = "456"
     client.devices = parse_locations(locations())
     client.update = AsyncMock(side_effect=lambda: client.devices)
+    client.get_schedule = AsyncMock(return_value={"schedule_type": "Timed", "revision": "startup", "schedule_controls_supported": True})
     client.set_temperature = AsyncMock()
     client.set_mode = AsyncMock()
     client.set_hold = AsyncMock()
@@ -211,7 +212,7 @@ async def test_diagnostics_omit_all_account_material(hass, entry):
 
     text = json.dumps(await async_get_config_entry_diagnostics(hass, entry))
     data = json.loads(text)
-    assert data["integration_version"] == "0.1.8"
+    assert data["integration_version"] == "0.3.1"
     assert data["thermostats"][0]["units"] == "Celsius"
     assert data["thermostats"][0]["api_temperature_units"] == "Fahrenheit"
     for secret in (

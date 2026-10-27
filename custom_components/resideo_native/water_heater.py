@@ -17,6 +17,7 @@ from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import ResideoCoordinator
+from .schedule_entity import ScheduleEntityMixin, register_schedule_actions
 from .dhw_entity import ResideoHotWaterEntity
 from .protocol.hot_water import DHW_BOOST_MINUTES, DHW_MODES
 
@@ -33,6 +34,7 @@ def _boost_duration(value: Any) -> int:
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
+    register_schedule_actions(True)
     coordinator: ResideoCoordinator = entry.runtime_data
     known: set[str] = set()
 
@@ -63,9 +65,10 @@ async def async_setup_entry(
     )
 
 
-class ResideoHotWater(ResideoHotWaterEntity, WaterHeaterEntity):
+class ResideoHotWater(ScheduleEntityMixin, ResideoHotWaterEntity, WaterHeaterEntity):
     """Control a DHW relay without inventing water-temperature measurements."""
 
+    _schedule_hot_water = True
     _attr_translation_key = "hot_water"
     _attr_icon = "mdi:water-boiler"
     # HA 2026.10 requires a unit even for a relay without temperature support.

@@ -8,6 +8,7 @@ from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -21,6 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 class ResideoCoordinator(DataUpdateCoordinator[dict[str, Thermostat]]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, client: NativeClient) -> None:
         self.client = client
+        self.schedule_modes: dict[str, str] = {}
         self.configured_options = dict(entry.options)
         interval = int(entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL))
         super().__init__(
@@ -30,6 +32,17 @@ class ResideoCoordinator(DataUpdateCoordinator[dict[str, Thermostat]]):
             name=NAME,
             update_interval=timedelta(seconds=max(30, min(600, interval))),
         )
+
+    @callback
+    def async_note_schedule(self, device_id, result):
+        mode = result.get("schedule_type")
+        previous = self.schedule_modes.get(device_id)
+        if mode in ("Timed", "Geofence", "None"):
+            self.schedule_modes[device_id] = mode
+        else:
+            self.schedule_modes.pop(device_id, None)
+        if previous != self.schedule_modes.get(device_id):
+            self.async_update_listeners()
 
     async def _async_update_data(self) -> dict[str, Thermostat]:
         try:

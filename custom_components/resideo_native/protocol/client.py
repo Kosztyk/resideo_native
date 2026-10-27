@@ -1,7 +1,7 @@
 """Asynchronous legacy Resideo / Honeywell Home mobile API client.
 
 Only routes and command bodies recovered from the supplied Android app are used.
-GET session initializes the account before discovery; account changes, geofencing,
+GET session initializes the account before discovery; account changes, phone geofence registration,
 push registrations, and firmware operations are deliberately outside this client.
 """
 
@@ -28,13 +28,16 @@ from .errors import (
     RateLimited,
 )
 from .hot_water import DHW_BOOST_MINUTES
+from .schedules import ScheduleClientMixin
+from .schedule_modes import ScheduleModesMixin
+from .validation_error import schedule_validation_detail
 
 BASE_URL = "https://lyric.alarmnet.com/"
 # Public subscription identifier shipped with the Resideo app; not a user's key.
 APP_SUBSCRIPTION = "8c9485374bab4b1aa4b3555ac2f032c4"
 
 
-class NativeClient:
+class NativeClient(ScheduleClientMixin, ScheduleModesMixin):
     def __init__(self, session: aiohttp.ClientSession, auth: ResideoAuth) -> None:
         self.session = session
         self.auth = auth
@@ -106,9 +109,13 @@ class NativeClient:
                         raise CannotConnect("Resideo API is temporarily unavailable")
                     if not 200 <= response.status < 300:
                         if method != "GET":
-                            raise CommandError(
-                                f"Resideo rejected the command (HTTP {response.status})"
-                            )
+                            message = f"Resideo rejected the command (HTTP {response.status})"
+                            if path.endswith(("/ThermostatSchedule", "/dhw/schedule", "/Schedule/Status")):
+                                secrets = [token, self.account_id, self.username]
+                                for device in self.devices.values():
+                                    secrets.extend([device.device_id, device.location_id, device.name])
+                                message += ": " + schedule_validation_detail(text, secrets)
+                            raise CommandError(message)
                         raise InvalidResponse(f"Resideo API returned HTTP {response.status}")
                     if not text.strip():
                         if method == "GET":

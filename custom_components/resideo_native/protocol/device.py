@@ -138,6 +138,20 @@ class Thermostat:
         mode = status.get("mode")
         return mode if isinstance(mode, str) else None
 
+    @property
+    def schedule_enabled(self) -> bool | None:
+        """Native schedule status is separate from the thermostat's hold."""
+        status = self.raw.get("scheduleStatus")
+        return {"Resume": True, "Pause": False}.get(status)
+
+    @property
+    def schedule_time_step(self) -> int | None:
+        """Use a reported increment; never silently round an owner's time."""
+        value = self.raw.get("allowedTimeIncrements")
+        if type(value) is int and 1 <= value <= 60 and 60 % value == 0:
+            return value
+        return None
+
     def temperature_limits(self, kind: str) -> tuple[float | None, float | None]:
         prefix = "Heat" if kind == "heat" else "Cool"
         return self._temperature_from_wire(

@@ -1,6 +1,9 @@
 {
   "domain": "resideo_native",
   "name": "Resideo Native",
+  "after_dependencies": [
+    "frontend"
+  ],
   "codeowners": [
     "@Kosztyk"
   ],
@@ -8,6 +11,7 @@
   "dependencies": [
     "climate",
     "sensor",
+    "switch",
     "water_heater"
   ],
   "documentation": "https://github.com/Kosztyk/resideo_native#readme",
@@ -15,5 +19,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Kosztyk/resideo_native/issues",
   "requirements": [],
-  "version": "0.1.8"
+  "version": "0.3.1"
 }

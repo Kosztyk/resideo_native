@@ -54,10 +54,11 @@
     "step": {
       "init": {
         "title": "Setări Resideo",
-        "description": "Toate termostatele folosesc aceeași reîmprospătare a contului. Modificările de temperatură folosesc tipul de menținere ales, dacă nu este deja activă o menținere permanentă.",
+        "description": "[Deschide programele Resideo]({schedule_editor_url}). Toate termostatele folosesc aceeași actualizare a contului. Schimbările de temperatură folosesc menținerea selectată.",
         "data": {
           "poll_interval": "Interval de actualizare (secunde)",
-          "default_hold": "Menținere implicită la schimbarea temperaturii"
+          "default_hold": "Menținere implicită la schimbarea temperaturii",
+          "show_schedule_sidebar": "Afișează programele Resideo în bara laterală"
         }
       }
     }
@@ -104,6 +105,20 @@
           "on": "Pornit",
           "off": "Oprit"
         }
+      },
+      "schedule_editor": {
+        "name": "Editor program"
+      }
+    },
+    "switch": {
+      "heating_schedule": {
+        "name": "Program încălzire"
+      },
+      "schedule_sidebar": {
+        "name": "Adaugă programul în bara laterală"
+      },
+      "geofencing": {
+        "name": "Comută la geofencing"
       }
     }
   },
@@ -121,6 +136,46 @@
     "cancel_hot_water_boost": {
       "name": "Anulează boost apă caldă",
       "description": "Trimite comanda de oprire temporară a apei calde din aplicație. Alege Urmează programul pentru a relua explicit programul."
+    },
+    "set_heating_schedule_enabled": {
+      "name": "Pornire/oprire program încălzire",
+      "description": "Activează sau dezactivează programul nativ fără a trimite o comandă de menținere a temperaturii.",
+      "fields": {
+        "enabled": {
+          "name": "Urmează programul",
+          "description": "Pornit sau oprit."
+        },
+        "expected_revision": {
+          "name": "Revizie așteptată",
+          "description": "Revizia dintr-un răspuns get_heating_schedule recent."
+        }
+      }
+    },
+    "set_heating_schedule_mode": {
+      "name": "Selectează tipul programului de încălzire",
+      "description": "Selectează Timed sau Geofence pentru un termostat Jasper după confirmare. Geofencing-ul telefonului rămâne în aplicația oficială.",
+      "fields": {
+        "mode": {
+          "name": "Tip program",
+          "description": "Timed sau Geofence."
+        },
+        "expected_revision": {
+          "name": "Revizie așteptată",
+          "description": "Revizia dintr-un răspuns get_heating_schedule recent."
+        },
+        "confirm_change": {
+          "name": "Confirmă schimbarea tipului",
+          "description": "Trebuie să fie true pentru trimitere."
+        },
+        "days": {
+          "name": "Zile programate",
+          "description": "Pentru Timed: șapte liste de zile, cu cel puțin o zi lucrătoare și una de weekend care conțin perioade."
+        },
+        "geofence": {
+          "name": "Temperaturi geofencing",
+          "description": "Temperaturi home_temperature și away_temperature; opțional sleep cu start_time, end_time și temperature. sleep: null elimină somnul; omiterea păstrează profilul existent."
+        }
+      }
     }
   }
 }

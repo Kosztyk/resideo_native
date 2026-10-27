@@ -22,6 +22,8 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
                 "mode": device.mode,
                 "operation_status": device.operation,
                 "hold_status": device.values.get("thermostatSetpointStatus"),
+                "schedule_enabled": device.schedule_enabled,
+                "schedule_time_step_minutes": device.schedule_time_step,
                 "temperature_limits_heat": device.temperature_limits("heat"),
                 "temperature_limits_cool": device.temperature_limits("cool"),
                 "hot_water": (

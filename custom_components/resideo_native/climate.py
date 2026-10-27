@@ -19,8 +19,9 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_DEFAULT_HOLD, DEFAULT_HOLD, DOMAIN
+from .const import CONF_DEFAULT_HOLD, DEFAULT_HOLD, DOMAIN, SCHEDULE_EDITOR_PATH
 from .coordinator import ResideoCoordinator
+from .schedule_entity import ScheduleEntityMixin, register_schedule_actions
 from .protocol import Thermostat
 
 MODE_MAP = {
@@ -42,6 +43,7 @@ HOLD_MAP = {
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
+    register_schedule_actions(False)
     coordinator: ResideoCoordinator = entry.runtime_data
     known: set[str] = set()
 
@@ -59,7 +61,7 @@ async def async_setup_entry(
     entry.async_on_unload(coordinator.async_add_listener(add_devices))
 
 
-class ResideoThermostat(CoordinatorEntity[ResideoCoordinator], ClimateEntity):
+class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinator], ClimateEntity):
     _attr_has_entity_name = True
     _attr_name = None
     _attr_translation_key = "thermostat"
@@ -76,6 +78,7 @@ class ResideoThermostat(CoordinatorEntity[ResideoCoordinator], ClimateEntity):
             manufacturer="Resideo / Honeywell Home",
             model=device.model,
             sw_version=device.raw.get("firmwareVersion") or device.raw.get("thermostatVersion"),
+            configuration_url=f"homeassistant:/{SCHEDULE_EDITOR_PATH}?config_entry={coordinator.config_entry.entry_id}",
         )
 
     @property

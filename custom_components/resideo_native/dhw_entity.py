@@ -7,7 +7,7 @@ from typing import Any
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, SCHEDULE_EDITOR_PATH
 from .coordinator import ResideoCoordinator
 from .protocol.hot_water import HotWaterZone
 
@@ -28,6 +28,7 @@ class ResideoHotWaterEntity(CoordinatorEntity[ResideoCoordinator]):
             model=device.model,
             sw_version=device.raw.get("firmwareVersion")
             or device.raw.get("thermostatVersion"),
+            configuration_url=f"homeassistant:/{SCHEDULE_EDITOR_PATH}?config_entry={coordinator.config_entry.entry_id}",
         )
 
     @property

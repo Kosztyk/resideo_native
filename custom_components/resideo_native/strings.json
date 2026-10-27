@@ -54,10 +54,11 @@
     "step": {
       "init": {
         "title": "Resideo settings",
-        "description": "One account refresh is shared by all thermostats. Manual temperature changes use the selected hold unless a permanent hold is already active.",
+        "description": "[Open Resideo schedules]({schedule_editor_url}). One account refresh is shared by all thermostats. Manual temperature changes use the selected hold unless a permanent hold is already active.",
         "data": {
           "poll_interval": "Refresh interval (seconds)",
-          "default_hold": "Default hold for temperature changes"
+          "default_hold": "Default hold for temperature changes",
+          "show_schedule_sidebar": "Show Resideo schedules in the sidebar"
         }
       }
     }
@@ -104,6 +105,20 @@
           "on": "On",
           "off": "Off"
         }
+      },
+      "schedule_editor": {
+        "name": "Schedule editor"
+      }
+    },
+    "switch": {
+      "heating_schedule": {
+        "name": "Heating schedule"
+      },
+      "schedule_sidebar": {
+        "name": "Add scheduler to sidebar"
+      },
+      "geofencing": {
+        "name": "Switch to Geofencing"
       }
     }
   },
@@ -121,6 +136,46 @@
     "cancel_hot_water_boost": {
       "name": "Cancel hot-water boost",
       "description": "Send the app's temporary hot-water off command. Choose Follow schedule to explicitly resume the schedule."
+    },
+    "set_heating_schedule_enabled": {
+      "name": "Turn heating schedule on/off",
+      "description": "Enable or disable the native schedule through Schedule/Status. Does not send a thermostat hold command.",
+      "fields": {
+        "enabled": {
+          "name": "Follow schedule",
+          "description": "True turns the native schedule on; false turns it off."
+        },
+        "expected_revision": {
+          "name": "Expected revision",
+          "description": "Revision from a fresh get_heating_schedule response."
+        }
+      }
+    },
+    "set_heating_schedule_mode": {
+      "name": "Set heating schedule type",
+      "description": "Select Timed or Geofence for one Jasper thermostat after explicit review. Phone geofencing remains in the official app.",
+      "fields": {
+        "mode": {
+          "name": "Schedule type",
+          "description": "Timed or Geofence."
+        },
+        "expected_revision": {
+          "name": "Expected revision",
+          "description": "Revision from a fresh get_heating_schedule response."
+        },
+        "confirm_change": {
+          "name": "Confirm type change",
+          "description": "Must be true to send the change."
+        },
+        "days": {
+          "name": "Timed days",
+          "description": "For Timed: seven day lists, with at least one populated weekday and weekend day."
+        },
+        "geofence": {
+          "name": "Geofence temperatures",
+          "description": "Home/Away temperatures; optional sleep with start_time, end_time and temperature. sleep: null removes sleep; omitting it preserves the returned profile."
+        }
+      }
     }
   }
 }

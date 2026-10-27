@@ -17,6 +17,8 @@ from .const import (
     CONF_DEFAULT_HOLD,
     CONF_POLL_INTERVAL,
     CONF_TOKEN,
+    CONF_SHOW_SCHEDULE_SIDEBAR,
+    SCHEDULE_EDITOR_PATH,
     DEFAULT_HOLD,
     DEFAULT_POLL_INTERVAL,
     DOMAIN,
@@ -179,6 +181,7 @@ class ResideoOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(data=user_input)
         return self.async_show_form(
             step_id="init",
+            description_placeholders={"schedule_editor_url": f"{SCHEDULE_EDITOR_PATH}?config_entry={self.config_entry.entry_id}"},
             data_schema=vol.Schema(
                 {
                     vol.Required(
@@ -187,6 +190,10 @@ class ResideoOptionsFlow(config_entries.OptionsFlow):
                             CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=30, max=600)),
+                    vol.Optional(
+                        CONF_SHOW_SCHEDULE_SIDEBAR,
+                        default=self.config_entry.options.get(CONF_SHOW_SCHEDULE_SIDEBAR, False),
+                    ): bool,
                     vol.Required(
                         CONF_DEFAULT_HOLD,
                         default=self.config_entry.options.get(CONF_DEFAULT_HOLD, DEFAULT_HOLD),

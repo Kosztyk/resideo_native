@@ -32,6 +32,7 @@ def client():
     client = Mock()
     client.devices = parse_locations(dhw_locations())
     client.update = AsyncMock(side_effect=lambda: client.devices)
+    client.get_schedule = AsyncMock(return_value={"schedule_type": "Timed", "revision": "startup", "schedule_controls_supported": True})
     for method in (
         "set_temperature",
         "set_mode",
@@ -75,7 +76,7 @@ def water_state(hass):
 
 
 def sensor_state(hass):
-    states = hass.states.async_all("sensor")
+    states = [s for s in hass.states.async_all("sensor") if s.entity_id.endswith("_hot_water_state")]
     assert len(states) == 1
     return states[0]
 
@@ -251,7 +252,7 @@ async def test_later_discovery_and_restoration_do_not_duplicate_entities(hass, c
     zone = device.raw.pop("dhwZone")
     entry = await load_entry(hass)
     assert not hass.states.async_all("water_heater")
-    assert not hass.states.async_all("sensor")
+    assert not [s for s in hass.states.async_all("sensor") if s.entity_id.endswith("_hot_water_state")]
     for _ in range(2):
         device.raw["dhwZone"] = zone
         entry.runtime_data.async_set_updated_data(client.devices)
@@ -284,7 +285,7 @@ async def test_untraced_model_is_read_only(hass, client):
 
 async def test_diagnostics_include_dhw_without_account_material(hass, entry):
     data = await async_get_config_entry_diagnostics(hass, entry)
-    assert data["integration_version"] == "0.1.8"
+    assert data["integration_version"] == "0.3.1"
     assert data["thermostats"][0]["hot_water"] is None
     assert data["thermostats"][1]["hot_water"]["dhw_state"] == "Off"
     text = json.dumps(data)
