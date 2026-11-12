@@ -10,7 +10,7 @@ This is an independent community integration for the legacy Resideo / Honeywell 
 
 > **Hardware-tested write controls:** The maintainer confirms successful thermostat operation using this Home Assistant integration on a physical **Honeywell Home Lyric T6 Pro** thermostat (internally reported as **Jasper** by Home Assistant), including HVAC mode, target temperature and hold/preset commands. The owner reports **firmware 6.0.1.50** from the physical thermostat; Home Assistant separately reports the internal model as `Jasper` and leaves `sw_version` blank. This confirmation is limited to the actual device tested; other model/firmware combinations remain unverified. Offline packaging checks cannot independently prove physical command acceptance. See [VALIDATION.md](VALIDATION.md).
 
-**Quick links:** [Installation](#installation) · [Schedule editor](#schedule-entities-and-editor-032) · [Testing evidence](docs/TESTING_2026-10-27.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
+**Quick links:** [Installation](#installation) · [Schedule editor](#schedule-entities-and-editor-033) · [Testing evidence](docs/TESTING_2026-10-27.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
 ## Compatibility
 
@@ -34,6 +34,7 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 - Celsius/Fahrenheit handling, including the Jasper/T6 API conversion corrected in version 0.1.2.
 - Heating, cooling, off, and automatic heat/cool modes when reported by the device. Heating-only models are not given cooling controls.
 - Heating/cooling activity when the reported operating status can be interpreted.
+- Report `EquipmentOff` as HVAC Idle while Heat/Cool mode is still enabled (v0.3.3).
 - Indoor humidity when the device exposes a valid, enabled reading.
 - **Follow schedule**, **Temporary hold**, and **Permanent hold** presets.
 - Shared account polling, automatic discovery of newly returned thermostats, and unavailable status for offline devices.
@@ -41,6 +42,28 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 - English and Romanian setup text, plus light/dark brand icons and logos.
 - Read/edit heating and DHW cloud schedules through response actions or the visual editor, with backups, revision checks and bounded readback.
 - Visible schedule On/Off, Geofencing setup and optional sidebar controls on supported thermostat devices.
+
+## HVAC activity and Idle state (0.3.3)
+
+The configured thermostat mode and the current equipment action are different:
+`Heat` means heating is enabled; `Heating` means the equipment is actively heating;
+`Idle` means the configured system is not currently requesting heat.
+
+As of **0.3.3**, the integration recognizes Resideo's `operationStatus.mode`
+value `EquipmentOff`, displaying `Idle` in Home Assistant when Heat/Cool mode is
+enabled. The thermostat's configured **Off** mode remains displayed as `Off`.
+Unknown or missing equipment statuses stay unknown rather than being estimated
+by comparing room temperature with the setpoint. This is important for T6
+cycling/TPI control.
+
+The fix was identified from real v0.3.2 Jasper/T6 diagnostics showing
+`mode: Heat` and `operation_status: EquipmentOff`. A successful v0.3.3
+post-install hardware retest has not yet been reported. This is a Home Assistant
+status presentation change, not a modification to the physical thermostat display,
+boiler operation, cloud commands, schedules, or network traffic.
+
+See [v0.3.3 release notes](RELEASE_NOTES_0.3.3.md) and the
+[HVAC activity explanation](docs/HVAC_IDLE_STATUS_v0.3.3.md).
 
 ## Command readback (0.3.2)
 
@@ -70,7 +93,7 @@ Based on [Alex-ley-scrub's contribution, PR #6](https://github.com/Kosztyk/resid
 with fresh-response checks, per-zone cancellation and lifecycle regressions.
 See [release notes](RELEASE_NOTES_0.3.2.md) and [validation](VALIDATION.md).
 
-## Schedule entities and editor (0.3.2)
+## Schedule entities and editor (0.3.3)
 
 Open **Settings → Devices & services → Resideo Native → your thermostat**.
 
@@ -105,7 +128,7 @@ Readback checks day coverage as well as times and temperature. See
 [the protocol investigation](docs/SLEEP_PROTOCOL.md).
 
 Replace the complete integration folder, restart HA and refresh the browser.
-Confirm **Editor 0.3.2**. The editor entity, Configure options and optional sidebar
+Confirm **Editor 0.3.3**. The editor entity, Configure options and optional sidebar
 remain available. Sidebar-only changes preserve poll/default-hold values and do
 not reload thermostat controls; thermostats sharing an account show one preference.
 

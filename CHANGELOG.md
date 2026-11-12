@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.3 — Correct Honeywell T6 HVAC Idle reporting
+
+- Map Resideo `operationStatus.mode = EquipmentOff` to `HVACAction.IDLE` when a thermostat is in an enabled heating/cooling mode.
+- Prioritize configured HVAC `Off` over a stale equipment status; continue to report actual Heat, Cool, and Fan status without temperature-based inference.
+- Leave unknown or missing statuses unknown, and retain all thermostat commands, authentication, schedules, and polling behavior unchanged.
+- Align schedule-editor version strings, displayed caption, versioned import URL, root test package version and release workflow gate to 0.3.3.
+- Add HVAC mapping regression tests and document the real Jasper/T6 v0.3.2 diagnostic evidence. The v0.3.3 fix is not yet confirmed by post-install physical testing.
+
+Related issue: [#7](https://github.com/Kosztyk/resideo_native/issues/7). Release details: [RELEASE_NOTES_0.3.3.md](RELEASE_NOTES_0.3.3.md).
+
 ## 0.3.2 — Confirm hot-water modes after delayed cloud updates
 
 - Incorporate the bounded command readback proposed by Alex-ley-scrub in

@@ -1,6 +1,30 @@
-# Validation — Resideo Native 0.3.2
+# Validation — Resideo Native 0.3.3
 
-## Current build — 2 November 2026
+## Current v0.3.3 package — 12 November 2026
+
+Baseline: maintainer-supplied `resideo_native_v0.3.3_hvac_idle_fix(1).zip`, which
+contains the corrected `climate.py` and integration version 0.3.3, based on
+v0.3.2. The deployment bundle also corrects two stale visual editor version
+references and prepares the surrounding release/documentation metadata.
+
+**Real-device evidence:** the user tested a Jasper/T6 on Home Assistant
+2026.11.1 with integration v0.3.2. The diagnostics reported a successful
+account update, `mode: Heat` and `operation_status: EquipmentOff`. That confirms
+the missing Resideo status value and justifies the mapping, but is **not**
+a live test of the updated v0.3.3 code.
+
+**Automated checks:** isolated syntax/packaging verification of the bundle is
+recorded in the release notes. The existing repository CI workflow must run
+Python/HA tests, JS/browser tests, HACS and Hassfest after upload; a local
+archive cannot be cited as proof that remote Actions or post-install tests passed.
+
+**Unchanged:** cloud routes and payloads, command execution, readback delays,
+account polling, schedules and authentication.
+
+See [RELEASE_NOTES_0.3.3.md](RELEASE_NOTES_0.3.3.md) and
+[docs/HVAC_IDLE_STATUS_v0.3.3.md](docs/HVAC_IDLE_STATUS_v0.3.3.md).
+
+## Historical v0.3.2 build — 2 November 2026
 
 The uploaded `resideo_native.zip` reports version 0.3.1. Every non-cache
 integration file was compared byte for byte with the v0.3.1 tag

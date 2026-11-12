@@ -143,24 +143,24 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
     def hvac_action(self) -> HVACAction | None:
         if not self.device:
             return None
-        # Report the thermostat's own operating status. Do not infer heating
-        # from the target temperature: T6 uses TPI / boiler cycle control.
-        operation = (self.device.operation or "").lower()
-        action = {
+        # The configured HVAC mode and active equipment status are different.
+        # Off takes precedence even if the cloud has a stale operationStatus.
+        if self.hvac_mode == HVACMode.OFF:
+            return HVACAction.OFF
+        # Use the thermostat's operationStatus, not a temperature comparison:
+        # T6 equipment demand can cycle independently of the room/setpoint gap.
+        operation = (self.device.operation or "").strip().lower()
+        return {
             "heat": HVACAction.HEATING,
             "heating": HVACAction.HEATING,
             "cool": HVACAction.COOLING,
             "cooling": HVACAction.COOLING,
             "fan": HVACAction.FAN,
+            "equipmentoff": HVACAction.IDLE,
             "idle": HVACAction.IDLE,
+            "off": HVACAction.IDLE,
+            "none": HVACAction.IDLE,
         }.get(operation)
-        if action:
-            return action
-        if self.hvac_mode == HVACMode.OFF:
-            return HVACAction.OFF
-        if operation in ("off", "none"):
-            return HVACAction.IDLE
-        return None
 
     def _temperature_kind(self) -> str | None:
         if not self.device:
