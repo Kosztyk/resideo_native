@@ -2,15 +2,15 @@
 
 # Resideo Native for Home Assistant
 
-Control Honeywell Home / Resideo **Lyric T6 and T6R** thermostats from Home Assistant using your normal **Resideo Smart Home** account.
+Control Honeywell Home / Resideo **Lyric T6/T6R** and compatible **T9/T10 (FlyCatcher)** thermostats from Home Assistant using your normal **Resideo Smart Home** account.
 
 **No Resideo developer account, consumer key, consumer secret, SmartThings connection, or HomeKit pairing is required.**
 
-This is an independent community integration for the legacy Resideo / Honeywell Home cloud service used by European Lyric thermostats. Internet access and an available Resideo service are required; this is not local LAN control.
+This is an independent community integration for the legacy Resideo / Honeywell Home cloud service used by Lyric thermostats and compatible T9/T10 installations. Internet access and an available Resideo service are required; this is not local LAN control.
 
-> **Hardware-tested write controls:** The maintainer confirms successful thermostat operation using this Home Assistant integration on a physical **Honeywell Home Lyric T6 Pro** thermostat (internally reported as **Jasper** by Home Assistant), including HVAC mode, target temperature and hold/preset commands. The owner reports **firmware 6.0.1.50** from the physical thermostat; Home Assistant separately reports the internal model as `Jasper` and leaves `sw_version` blank. This confirmation is limited to the actual device tested; other model/firmware combinations remain unverified. Offline packaging checks cannot independently prove physical command acceptance. See [VALIDATION.md](VALIDATION.md).
+> **Hardware-tested write controls:** The maintainer confirms successful thermostat operation using this Home Assistant integration on a physical **Honeywell Home Lyric T6 Pro** thermostat (internally reported as **Jasper** by Home Assistant), including HVAC mode, target temperature and hold/preset commands. The owner reports **firmware 6.0.1.50** from the physical thermostat; Home Assistant separately reports the internal model as `Jasper` and leaves `sw_version` blank. See the compatibility table for separately reported T6R and FlyCatcher hardware tests. See [VALIDATION.md](VALIDATION.md).
 
-**Quick links:** [Installation](#installation) · [Schedule editor](#schedule-entities-and-editor-033) · [Testing evidence](docs/TESTING_2026-10-27.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
+**Quick links:** [Installation](#installation) · [Room sensors and priority](#wireless-room-sensors-and-room-priority) · [Schedule editor](#schedule-entities-and-editor) · [Validation](VALIDATION.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
 ## Compatibility
 
@@ -19,11 +19,12 @@ This is an independent community integration for the legacy Resideo / Honeywell 
 | Honeywell Home Lyric T6 Pro (internally `Jasper`), firmware `6.0.1.50` | Maintainer reports successful physical operation of mode, setpoint and hold commands | 
 | Honeywell Home Lyric T6R `T6H700RW4011` (internally `Jasper`), firmware `6.0.1.50`, UK/EMEA | Requester confirms heating/DHW schedule reads, edits, deletion/restoration, DHW boost and real HVAC Off on HA OS 2026.10.4; see [testing evidence](docs/TESTING_2026-10-27.md) |
 | Other European Lyric T6 / T6R variants on the legacy Resideo Smart Home backend | Discovered/supported by code; device/firmware write behavior requires separate verification |
+| Honeywell Home T9/T10 family reported by the legacy cloud as `FlyCatcher` | Wireless Smart Room Sensor entities and room priority when reported by the cloud. One installation was tested in [issue #9](https://github.com/Kosztyk/resideo_native/issues/9). See [model scope](docs/ROOM_SENSORS.md#supported-devices). |
 | Other thermostats using the same legacy API | May work; not individually verified |
 | First Alert / Auth0 / Titan-only accounts or devices | Not supported |
 | Total Connect Comfort or Total Connect security systems | Not supported |
 
-The integration is based on the protocol used by Resideo Smart Home Android **6.21.1**. An Android phone is not required for setup.
+The integration is based on the protocol used by Resideo Smart Home Android **6.21.1**, with FlyCatcher room support based on **6.21.2**. An Android phone is not required for setup.
 
 ## Features
 
@@ -36,12 +37,29 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 - Heating/cooling activity when the reported operating status can be interpreted.
 - Report `EquipmentOff` as HVAC Idle while Heat/Cool mode is still enabled (v0.3.3).
 - Indoor humidity when the device exposes a valid, enabled reading.
+- FlyCatcher wireless room temperature, humidity, motion, occupancy and sensor diagnostics when available.
+- FlyCatcher Room priority with individual or multiple rooms, All rooms, and Follow Me.
 - **Follow schedule**, **Temporary hold**, and **Permanent hold** presets.
 - Shared account polling, automatic discovery of newly returned thermostats, and unavailable status for offline devices.
 - Automatic token refresh and reauthentication support.
 - English and Romanian setup text, plus light/dark brand icons and logos.
 - Read/edit heating and DHW cloud schedules through response actions or the visual editor, with backups, revision checks and bounded readback.
 - Visible schedule On/Off, Geofencing setup and optional sidebar controls on supported thermostat devices.
+
+## Wireless room sensors and room priority
+
+On compatible FlyCatcher thermostats, paired wireless sensors appear as Home Assistant
+devices linked to the thermostat. Each exposes the measurements and diagnostics
+the cloud provides. Manage pairing, naming and room assignments in the Resideo app.
+
+Use the thermostat’s **Room priority** selector to choose one or more rooms,
+**All rooms**, or **Follow Me**, which the Resideo app calls **Active Rooms**.
+Changing the priority while the normal schedule is running can start a temporary
+hold. **Follow schedule** in the thermostat’s presets restores the rooms set
+for the current schedule period.
+
+See the [room sensor and priority guide](docs/ROOM_SENSORS.md) for available
+entities, supported models, hold behavior and testing evidence.
 
 ## HVAC activity and Idle state (0.3.3)
 
@@ -93,7 +111,7 @@ Based on [Alex-ley-scrub's contribution, PR #6](https://github.com/Kosztyk/resid
 with fresh-response checks, per-zone cancellation and lifecycle regressions.
 See [release notes](RELEASE_NOTES_0.3.2.md) and [validation](VALIDATION.md).
 
-## Schedule entities and editor (0.3.3)
+## Schedule entities and editor
 
 Open **Settings → Devices & services → Resideo Native → your thermostat**.
 
@@ -128,7 +146,7 @@ Readback checks day coverage as well as times and temperature. See
 [the protocol investigation](docs/SLEEP_PROTOCOL.md).
 
 Replace the complete integration folder, restart HA and refresh the browser.
-Confirm **Editor 0.3.3**. The editor entity, Configure options and optional sidebar
+Confirm **Editor 0.3.4**. The editor entity, Configure options and optional sidebar
 remain available. Sidebar-only changes preserve poll/default-hold values and do
 not reload thermostat controls; thermostats sharing an account show one preference.
 
@@ -261,8 +279,8 @@ See [VALIDATION.md](VALIDATION.md) for scope and limitations.
 
 ### Manual installation
 
-1. Download a release archive, or download this repository as a ZIP and extract it.
-2. Copy the `custom_components/resideo_native` folder into Home Assistant's `custom_components` directory.
+1. Download and extract the [Home Assistant install ZIP](https://github.com/Kosztyk/resideo_native/releases/latest).
+2. Copy the extracted `resideo_native` folder into Home Assistant’s `custom_components` directory. If you downloaded the source ZIP, the integration is under `custom_components/resideo_native`.
 3. Confirm that this file exists:
 
    ```text
@@ -439,6 +457,8 @@ The existing configured account is retained. Removing and re-adding the integrat
 | Cannot find `oauth2redirect` | Check Console, select all Network request types, clear unrelated filters, and keep Developer Tools open before signing in. |
 | Sign-in succeeds but no thermostat is found | Confirm that the device is visible in the legacy Resideo Smart Home account. First Alert/Titan-only devices are outside this integration's scope. |
 | Temperatures appear as `78.8 °C` or `73.4 °C` | Install version 0.1.2 or newer, replace the complete integration folder, and restart Home Assistant. |
+| Paired wireless room sensors are missing | Confirm the thermostat uses the FlyCatcher family on the legacy account and the sensor is visible in the Resideo app. Check [entity availability and reporting](docs/ROOM_SENSORS.md#troubleshooting). |
+| Room Priority returns to the scheduled rooms | Check the active hold and the selected rooms in the Resideo app. See [room priority readback](docs/ROOM_SENSORS.md#troubleshooting). |
 | Thermostat is unavailable | Check the device in the official app, its connection, and Resideo service availability. |
 | Requests are rate limited | Wait for the server's retry period rather than repeatedly attempting sign-in. |
 | A command times out | Check the thermostat or official app before repeating it; a timed-out write may already have reached the device. |
@@ -450,7 +470,7 @@ For an issue report, include the integration version, Home Assistant version, th
 - Cloud polling; SignalR push updates are not implemented.
 - No vacation creation, phone geofence setup, hot-water temperature controls, fan controls, or installer settings.
 - No automatic browser callback helper or extension is included in the current release.
-- The maintainer confirms physical command acceptance on their **Jasper** device; firmware `6.0.1.50` is reported by the owner, although the Home Assistant device registry does not expose it. Write behavior has not been individually verified on other models or firmware builds.
+- Check the [validation evidence](VALIDATION.md) for the firmware and hardware configurations covered by device testing.
 - Resideo service or authentication changes can require integration updates.
 
 ## Jasper/T6R hot-water hardware verification (user report)

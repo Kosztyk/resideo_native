@@ -1,10 +1,15 @@
-# Resideo Native 0.3.3 — Honeywell T6 HVAC Idle status
+# Resideo Native 0.3.4
 
-This update recognizes `EquipmentOff` as an idle equipment state in Home Assistant, even when Heat mode is selected. No thermostat commands, schedules or polling change. The input was confirmed by real v0.3.2 Jasper/T6 diagnostics; v0.3.3 post-install hardware confirmation is pending.
+Update through HACS or replace the complete `/config/custom_components/resideo_native/`
+folder from the release ZIP. Restart Home Assistant and keep the existing account
+configuration.
 
-See [v0.3.3 release notes](RELEASE_NOTES_0.3.3.md), [status mapping](docs/HVAC_IDLE_STATUS_v0.3.3.md) and [validation](VALIDATION.md). Existing account entries and thermostat entities are retained after upgrade.
+On a supported T9/T10-family (FlyCatcher) thermostat, find **Room priority** on
+the thermostat’s device page. Look for paired room sensors under the integration’s
+devices. See the [room sensor guide](docs/ROOM_SENSORS.md),
+[release notes](RELEASE_NOTES_0.3.4.md) and [validation evidence](VALIDATION.md).
 
-## Previous 0.3.2 schedule/readback instructions (still applicable)
+## Schedule editor and hot water
 
 This release includes heating/DHW schedule actions and editing, visible native
 schedule controls, optional sidebar access and reviewed Geofencing/sleep setup.
@@ -29,7 +34,7 @@ is claimed.
    **Review & save**, confirm and **Save to Resideo**.
 7. **Cancel** closes either popup without changing the cloud or switch state.
 8. The full **Schedule editor** has the same create/edit/remove sleep controls.
-   Confirm **Editor 0.3.3** in the popup or full page.
+   Confirm **Editor 0.3.4** in the popup or full page.
 
 The mode switch reflects confirmed cloud type; the separate Heating schedule
 switch controls native schedule On/Off. Opening setup and saving sleep into a
@@ -42,7 +47,7 @@ preferences. No household temperatures or periods are installed by this update.
 To test this update, turn hot water on/off or start/cancel boost, then compare
 the HA mode with the official app. A delayed response receives at most three
 extra GETs; heating commands and background polling keep their existing behavior.
-Keep your current account and check **Editor 0.3.3** after restarting.
+Keep your current account and check **Editor 0.3.4** after restarting.
 
 For sleep settings, use [the focused sleep retest](docs/SLEEP_PAYLOAD_RETEST.md).
 The [full switch/sleep test plan](docs/MODE_SWITCH_TEST_PLAN.md) is also included.

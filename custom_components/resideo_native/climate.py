@@ -103,7 +103,7 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
         return features
 
     @property
-    def temperature_unit(self) -> str:
+    def native_temperature_unit(self) -> str:
         return (
             UnitOfTemperature.FAHRENHEIT
             if self.device and self.device.unit == "Fahrenheit"
@@ -112,10 +112,10 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
 
     @property
     def target_temperature_step(self) -> float:
-        return 1 if self.temperature_unit == UnitOfTemperature.FAHRENHEIT else 0.5
+        return 1 if self.native_temperature_unit == UnitOfTemperature.FAHRENHEIT else 0.5
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         return self.device.current_temperature if self.device and self.device.unit else None
 
     @property
@@ -182,12 +182,12 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
         return None
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         kind = self._temperature_kind()
         return self.device.setpoint(kind) if kind and self.device else None
 
     @property
-    def target_temperature_low(self) -> float | None:
+    def native_target_temperature_low(self) -> float | None:
         return (
             self.device.setpoint("heat")
             if self.device and self.hvac_mode == HVACMode.HEAT_COOL
@@ -195,12 +195,22 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
         )
 
     @property
-    def target_temperature_high(self) -> float | None:
+    def native_target_temperature_high(self) -> float | None:
         return (
             self.device.setpoint("cool")
             if self.device and self.hvac_mode == HVACMode.HEAT_COOL
             else None
         )
+
+    # Home Assistant 2026.11 introduced the native_ API. Provide legacy
+    # names *only* on 2026.10, where ClimateEntity does not yet expose the
+    # new methods. Defining legacy overrides on 2026.11 causes warnings.
+    if not hasattr(ClimateEntity, "native_temperature_unit"):
+        temperature_unit = native_temperature_unit
+        current_temperature = native_current_temperature
+        target_temperature = native_target_temperature
+        target_temperature_low = native_target_temperature_low
+        target_temperature_high = native_target_temperature_high
 
     @property
     def min_temp(self) -> float:
@@ -271,8 +281,8 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
             else self.coordinator.config_entry.options.get(CONF_DEFAULT_HOLD, DEFAULT_HOLD)
         )
         if self.hvac_mode == HVACMode.HEAT_COOL:
-            heat = kwargs.get("target_temp_low", self.target_temperature_low)
-            cool = kwargs.get("target_temp_high", self.target_temperature_high)
+            heat = kwargs.get("target_temp_low", self.native_target_temperature_low)
+            cool = kwargs.get("target_temp_high", self.native_target_temperature_high)
             if ATTR_TEMPERATURE in kwargs:
                 raise HomeAssistantError("Set the low and high temperatures in automatic mode")
             await self.coordinator.async_command(

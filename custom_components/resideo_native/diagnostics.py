@@ -26,6 +26,18 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
                 "schedule_time_step_minutes": device.schedule_time_step,
                 "temperature_limits_heat": device.temperature_limits("heat"),
                 "temperature_limits_cool": device.temperature_limits("cool"),
+                # Counts only: never include accessory names, MACs, serials,
+                # locations, room names, or raw cloud response data.
+                "wireless_room_sensor_count": len(device.room_accessories),
+                "room_priority_mode": (
+                    device.room_priority.priority_type if device.room_priority else None
+                ),
+                "wireless_room_metrics": {
+                    "temperature": sum(a.temperature is not None for a in device.room_accessories.values()),
+                    "humidity": sum(a.humidity is not None for a in device.room_accessories.values()),
+                    "motion": sum(a.motion is not None for a in device.room_accessories.values()),
+                    "occupancy": sum(a.occupancy is not None for a in device.room_accessories.values()),
+                },
                 "hot_water": (
                     {
                         **device.hot_water.attributes,

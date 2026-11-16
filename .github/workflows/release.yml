@@ -1,4 +1,4 @@
-name: Publish Resideo Native v0.3.3
+name: Publish Resideo Native v0.3.4
 
 on:
   workflow_run:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: publish-resideo-native-0.3.3
+  group: publish-resideo-native-0.3.4
   cancel-in-progress: false
 
 jobs:
@@ -41,8 +41,8 @@ jobs:
             exit 0
           fi
           VERSION="$(python -c 'import json; print(json.load(open("custom_components/resideo_native/manifest.json"))["version"])')"
-          if [[ "$VERSION" != "0.3.3" ]]; then
-            echo "Auto-publishing is restricted to the authorized v0.3.3 release."
+          if [[ "$VERSION" != "0.3.4" ]]; then
+            echo "Auto-publishing is restricted to the authorized v0.3.4 release."
             exit 0
           fi
           if gh release view "v$VERSION" >/dev/null 2>&1; then
@@ -64,10 +64,15 @@ jobs:
           ARCHIVE="$RUNNER_TEMP/resideo-native-$VERSION-source.zip"
           git archive --format=zip --prefix="resideo-native-$VERSION/" \
             --output="$ARCHIVE" "$VALIDATED_SHA"
-          (cd "$RUNNER_TEMP" && sha256sum "resideo-native-$VERSION-source.zip" \
-            > "resideo-native-$VERSION-source.zip.sha256")
+          INSTALL="$RUNNER_TEMP/resideo_native_v${VERSION}_home_assistant.zip"
+          git archive --format=zip --output="$INSTALL" "$VALIDATED_SHA:custom_components"
+          (
+            cd "$RUNNER_TEMP"
+            sha256sum "${ARCHIVE##*/}" > "${ARCHIVE##*/}.sha256"
+            sha256sum "${INSTALL##*/}" > "${INSTALL##*/}.sha256"
+          )
           gh release create "v$VERSION" \
-            "$ARCHIVE" "$ARCHIVE.sha256" \
+            "$ARCHIVE" "$ARCHIVE.sha256" "$INSTALL" "$INSTALL.sha256" \
             --target "$VALIDATED_SHA" \
             --title "Resideo Native v$VERSION" \
             --notes-file "$NOTES" \

@@ -666,5 +666,41 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(list(parse_locations(payload)), ["T6-test"])
 
 
+class RoomPriorityTests(unittest.IsolatedAsyncioTestCase):
+    async def test_follow_me_uses_scheduled_override_and_preserves_existing_hold(self):
+        from unittest.mock import AsyncMock
+        from protocol.rooms import RoomPriority
+
+        devices = parse_locations(locations())
+        device = devices["T6-test"]
+        device.raw["deviceType"] = "FlyCatcher"
+        device.raw["scheduleStatus"] = "Resume"
+        client = NativeClient(None, None)
+        client.devices = devices
+        client._request = AsyncMock()
+
+        for current, expected in (
+            ("NoHold", "TemporaryHold"),
+            ("PermanentHold", "PermanentHold"),
+        ):
+            with self.subTest(current=current):
+                device.room_priority = RoomPriority(
+                    "PickARoom", (1,), ((1, "Office"),), current
+                )
+                client._request.reset_mock()
+                await client.set_room_priority(device.device_id, "FollowMe", [])
+                client._request.assert_awaited_once_with(
+                    "PUT", "api/v1/locations/123/devices/T6-test/priority",
+                    {"currentPriority": {"priorityType": "FollowMe"}, "status": expected},
+                )
+
+    def test_ignore_flycatcher_wire_zero_before_temperature_conversion(self):
+        device = parse_locations(locations())["T6-test"]
+        device.raw["deviceType"] = "FlyCatcher"
+        assert device.setpoint("heat") == 22
+        device.values["heatSetpoint"] = 0
+        assert device.setpoint("heat") is None
+
+
 if __name__ == "__main__":
     unittest.main()

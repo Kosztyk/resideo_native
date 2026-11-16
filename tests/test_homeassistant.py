@@ -212,7 +212,7 @@ async def test_diagnostics_omit_all_account_material(hass, entry):
 
     text = json.dumps(await async_get_config_entry_diagnostics(hass, entry))
     data = json.loads(text)
-    assert data["integration_version"] == "0.3.3"
+    assert data["integration_version"] == "0.3.4"
     assert data["thermostats"][0]["units"] == "Celsius"
     assert data["thermostats"][0]["api_temperature_units"] == "Fahrenheit"
     for secret in (
@@ -585,3 +585,51 @@ async def test_reauth_rejects_a_different_resideo_account(hass, entry, client):
         assert result["type"] == "abort"
         assert result["reason"] == "wrong_account"
         assert entry.data["token"]["refresh_token"] == "private-refresh"
+
+
+async def test_wireless_room_entities_share_sensor_device_linked_to_thermostat(
+    hass, entry, client, caplog,
+):
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    from custom_components.resideo_native.protocol.rooms import parse_room_response
+
+    device = client.devices["T6-test"]
+    device.raw["deviceType"] = "FlyCatcher"
+    device.room_accessories = parse_room_response(
+        {
+            "rooms": [
+                {
+                    "id": 1,
+                    "name": "Office",
+                    "accessories": [
+                        {
+                            "id": 1,
+                            "type": "IndoorAirSensor",
+                            "temperature": 68,
+                            "motionDet": True,
+                        },
+                    ],
+                },
+            ],
+        },
+        group_id=0,
+        convert_temperature=device._temperature_from_wire,
+    )
+    entry.runtime_data.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+
+    entities = er.async_get(hass)
+    thermostat = entities.async_get(thermostat_state(hass).entity_id)
+    room_device_ids = set()
+    for platform, suffix in (("sensor", "temperature"), ("binary_sensor", "motion")):
+        entity_id = entities.async_get_entity_id(
+            platform, "resideo_native", f"T6-test_room_sensor_0:1_{suffix}",
+        )
+        assert entity_id is not None
+        room_device_ids.add(entities.async_get(entity_id).device_id)
+    assert len(room_device_ids) == 1
+    room = dr.async_get(hass).async_get(room_device_ids.pop())
+    assert room.id != thermostat.device_id
+    assert room.via_device_id == thermostat.device_id
+    assert "deprecated `via_device` parameter" not in caplog.text

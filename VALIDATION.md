@@ -1,6 +1,20 @@
-# Validation — Resideo Native 0.3.3
+# Validation — Resideo Native 0.3.4
 
-## Current v0.3.3 package — 12 November 2026
+## v0.3.4 FlyCatcher evidence
+
+The stable integration is built from the tested 0.3.4b7 install archive. The
+runtime component differs from that archive only by its stable version strings.
+The [tester’s report](https://github.com/Kosztyk/resideo_native/issues/9#issuecomment-6905093830)
+reported no issues on b7 with their FlyCatcher installation. See the
+[room sensor guide](docs/ROOM_SENSORS.md#field-evidence) for the sequence of
+room-priority, schedule and registry findings.
+
+The release workflow adds the exact commit and validation run to the release
+notes. The local and remote suites use synthetic data for protocol tests.
+
+
+
+## Historical v0.3.3 package — 12 November 2026
 
 Baseline: maintainer-supplied `resideo_native_v0.3.3_hvac_idle_fix(1).zip`, which
 contains the corrected `climate.py` and integration version 0.3.3, based on
@@ -122,7 +136,7 @@ See [the APK trace](docs/SLEEP_PROTOCOL.md).
 [Validate Resideo Native](https://github.com/Kosztyk/resideo_native/actions/workflows/validate.yml)
 runs five independent jobs: packaging/Python compilation, the Python/HA suite,
 JavaScript/browser checks, **HACS Validation** and **Hassfest Validation**.
-No HACS checks are ignored. The release workflow publishes v0.3.2 only when all
+No HACS checks are ignored. The release workflow publishes v0.3.4 only when all
 jobs succeed on a push to the current main commit. Its release body records the
 exact validated commit and workflow-run link. The CI checks on that commit are
 the authoritative remote result, rather than a local packaging check alone.

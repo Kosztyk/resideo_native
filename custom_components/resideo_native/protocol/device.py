@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import isfinite
 from typing import Any
+
+from .rooms import RoomAccessory, RoomPriority
 
 from .errors import CommandError, InvalidResponse
 from .hot_water import HotWaterZone
@@ -33,6 +35,16 @@ class Thermostat:
     location_name: str
     device_id: str
     raw: dict[str, Any]
+    room_accessories: dict[str, RoomAccessory] = field(default_factory=dict)
+    room_priority: RoomPriority | None = None
+
+    @property
+    def supports_rooms(self) -> bool:
+        """The Android application exposes rooms for FlyCatcher-family models."""
+        return any(
+            str(self.raw.get(field) or "").strip().casefold().startswith("flycatcher")
+            for field in ("deviceType", "deviceModel")
+        )
 
     @property
     def name(self) -> str:
@@ -67,8 +79,12 @@ class Thermostat:
     @property
     def wire_unit(self) -> str | None:
         """Match the native app's model-specific temperature encoding."""
-        model = self.raw.get("deviceType") or self.raw.get("deviceModel") or ""
-        if self.unit and str(model).strip().casefold() in _FAHRENHEIT_WIRE_MODELS:
+        models = (self.raw.get("deviceType"), self.raw.get("deviceModel"))
+        if self.unit and any(
+            (model_name := str(model or "").strip().casefold()) in _FAHRENHEIT_WIRE_MODELS
+            or model_name.startswith("flycatcher")
+            for model in models
+        ):
             return "Fahrenheit"
         return self.unit
 
@@ -109,7 +125,11 @@ class Thermostat:
         return self._temperature_from_wire(self.thermostat.get("indoorTemperature"))
 
     def setpoint(self, kind: str) -> float | None:
-        return self._temperature_from_wire(self.values.get(f"{kind}Setpoint"))
+        value = self.values.get(f"{kind}Setpoint")
+        # FlyCatcher can briefly report 0 °F while applying a priority change.
+        if self.supports_rooms and number(value) == 0:
+            return None
+        return self._temperature_from_wire(value)
 
     @property
     def humidity(self) -> float | None:

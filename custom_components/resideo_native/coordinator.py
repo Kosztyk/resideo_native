@@ -80,6 +80,7 @@ class ResideoCoordinator(DataUpdateCoordinator[dict[str, Thermostat]]):
         confirmed: CommandConfirmation | None = None,
         *,
         read_back_key: str = "command",
+        unconfirmed_warning: str | None = None,
     ) -> None:
         """Send once, then optionally wait for a fresh cloud confirmation.
 
@@ -120,7 +121,8 @@ class ResideoCoordinator(DataUpdateCoordinator[dict[str, Thermostat]]):
                     self.config_entry.async_create_background_task(
                         self.hass,
                         self._async_read_back(
-                            read_back_key, marker, confirmed, minimum_generation
+                            read_back_key, marker, confirmed, minimum_generation,
+                            unconfirmed_warning,
                         ),
                         f"{NAME} command read-back",
                         eager_start=False,
@@ -160,6 +162,7 @@ class ResideoCoordinator(DataUpdateCoordinator[dict[str, Thermostat]]):
         marker: object,
         confirmed: CommandConfirmation,
         minimum_generation: int,
+        unconfirmed_warning: str | None,
     ) -> None:
         try:
             for delay in READ_BACK_DELAYS:
@@ -177,7 +180,10 @@ class ResideoCoordinator(DataUpdateCoordinator[dict[str, Thermostat]]):
                     return
                 if self._read_back_terminal_error(minimum_generation):
                     return
-            _LOGGER.debug("Command read-back ended without cloud confirmation")
+            if unconfirmed_warning:
+                _LOGGER.warning(unconfirmed_warning)
+            else:
+                _LOGGER.debug("Command read-back ended without cloud confirmation")
         finally:
             if self._read_back_requests.get(key) is marker:
                 self._read_back_requests.pop(key, None)

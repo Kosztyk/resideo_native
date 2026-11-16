@@ -23,7 +23,7 @@ from .coordinator import ResideoCoordinator
 from .frontend import async_setup_editor, async_unload_editor
 from .protocol import AuthenticationError, NativeClient, ResideoAuth, Token
 
-PLATFORMS = [Platform.CLIMATE, Platform.SENSOR, Platform.SWITCH, Platform.WATER_HEATER]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.CLIMATE, Platform.SELECT, Platform.SENSOR, Platform.SWITCH, Platform.WATER_HEATER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

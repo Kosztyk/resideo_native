@@ -1,11 +1,11 @@
-# Schedule editor — Resideo Native 0.3.1
+# Schedule editor — Resideo Native 0.3.4
 
 ## Open the visible entity
 
 Replace the complete integration folder, restart HA and refresh the browser.
 Open **Settings → Devices & services → Resideo Native → your thermostat** and
 click **Schedule editor**, the entity with a calendar/edit icon and Open state.
-It opens that thermostat's page. Confirm **Editor 0.3.1**.
+It opens that thermostat's page. Confirm **Editor 0.3.4**.
 
 Each supported thermostat has **Heating schedule**, **Add scheduler to sidebar**
 and **Switch to Geofencing** switches on its device page. They can be added to a
@@ -189,7 +189,7 @@ and [Sunday/DHW retest](READBACK_RETEST.md).
 For an embedded editor, register this JavaScript module resource:
 
 ```text
-/resideo_native/schedule-editor-0.3.1.js
+/resideo_native/schedule-editor-0.3.4.js
 ```
 
 ```yaml

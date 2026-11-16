@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.4 — FlyCatcher wireless room sensors and priority
+
+- Add available Smart Room Sensor measurements and diagnostics for compatible T9/T10-family thermostats.
+- Add single-room, multiple-room, All rooms and Follow Me selection with bounded cloud readback.
+- Request a temporary override for scheduled Follow Me and preserve the reported hold type for an existing hold. Suppress transitional FlyCatcher zero targets.
+- Use `via_device_id` for room accessory links and support the native Home Assistant 2026.11 climate temperature API.
+- Promote the tested b7 component with stable version metadata. See [release notes](RELEASE_NOTES_0.3.4.md) and [issue #9](https://github.com/Kosztyk/resideo_native/issues/9).
+
 ## 0.3.3 — Correct Honeywell T6 HVAC Idle reporting
 
 - Map Resideo `operationStatus.mode = EquipmentOff` to `HVACAction.IDLE` when a thermostat is in an enabled heating/cooling mode.

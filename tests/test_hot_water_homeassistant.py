@@ -292,7 +292,7 @@ async def test_untraced_model_is_read_only(hass, client):
 
 async def test_diagnostics_include_dhw_without_account_material(hass, entry):
     data = await async_get_config_entry_diagnostics(hass, entry)
-    assert data["integration_version"] == "0.3.2"
+    assert data["integration_version"] == "0.3.4"
     assert data["thermostats"][0]["hot_water"] is None
     assert data["thermostats"][1]["hot_water"]["dhw_state"] == "Off"
     text = json.dumps(data)
