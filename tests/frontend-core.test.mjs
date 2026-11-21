@@ -192,3 +192,16 @@ test('Geofence requests include explicit overnight sleep creation or removal',()
  assert.equal(makeModeRequest('climate.upstairs',b,'Geofence',{}, {home_temperature:20,away_temperature:16,sleep:null},true).service_data.geofence.sleep,null);
  assert.throws(()=>makeModeRequest('climate.upstairs',b,'Geofence',{}, {home_temperature:20,away_temperature:16,sleep:{...sleep,end_time:'22:00'}},true),/different/);
 });
+test('time fields are hour/minute selects, not the native time picker that crashes the HA macOS app',async()=>{
+ const {timeSelects}=await import(path.href);
+ const fs=await import('node:fs');
+ assert.doesNotMatch(fs.readFileSync(path,'utf8'),/<input type="time"/);
+ const html=timeSelects('06:50:00',10,'data-index="0" data-field="time"','Period 1 start time','');
+ assert.match(html,/data-part="h"[^>]*>.*<option value="06" selected>06<\/option>/);
+ assert.match(html,/<option value="50" selected>50<\/option>/);
+ assert.equal((html.match(/data-part="m"[\s\S]*$/)[0].match(/<option value="\d\d"/g)||[]).length,6);
+ const offGrid=timeSelects('06:53',10,'','Sleep start','');
+ assert.match(offGrid,/<option value="53" selected>53<\/option>/);
+ const empty=timeSelects('',1,'','Period 2 start time','disabled');
+ assert.match(empty,/<option value="" selected>--<\/option>/);assert.match(empty,/ disabled>/);
+});
