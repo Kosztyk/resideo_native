@@ -12,6 +12,13 @@ This is an independent community integration for the legacy Resideo / Honeywell 
 
 **Quick links:** [Installation](#installation) · [Room sensors and priority](#wireless-room-sensors-and-room-priority) · [Schedule editor](#schedule-entities-and-editor) · [Validation](VALIDATION.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
+## What's new in v0.3.5
+
+- Hour and minute dropdowns fix the schedule time picker crash in the Home Assistant macOS app. They cover Timed heating, hot water and Geofencing Sleep. The Timed setup popup keeps both digits visible at narrow widths. [PR #10 by Alex-ley-scrub](https://github.com/Kosztyk/resideo_native/pull/10)
+- Wireless room sensors report their own temperature, humidity and motion. Missing readings stay unknown. Room discovery skips malformed entries and preserves each accessory's priority-exclusion flags. [Issue #11](https://github.com/Kosztyk/resideo_native/issues/11)
+
+See the [v0.3.5 release notes](RELEASE_NOTES_0.3.5.md).
+
 ## Compatibility
 
 | Device or service | Support |
@@ -50,7 +57,9 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 
 On compatible FlyCatcher thermostats, paired wireless sensors appear as Home Assistant
 devices linked to the thermostat. Each exposes the measurements and diagnostics
-the cloud provides. Manage pairing, naming and room assignments in the Resideo app.
+the cloud provides for that accessory. Existing measurement entities can show
+**Unknown** when the cloud omits a reading. Manage pairing, naming and room
+assignments in the Resideo app.
 
 Use the thermostat’s **Room priority** selector to choose one or more rooms,
 **All rooms**, or **Follow Me**, which the Resideo app calls **Active Rooms**.
@@ -146,9 +155,11 @@ Readback checks day coverage as well as times and temperature. See
 [the protocol investigation](docs/SLEEP_PROTOCOL.md).
 
 Replace the complete integration folder, restart HA and refresh the browser.
-Confirm **Editor 0.3.4**. The editor entity, Configure options and optional sidebar
-remain available. Sidebar-only changes preserve poll/default-hold values and do
-not reload thermostat controls; thermostats sharing an account show one preference.
+Confirm **Editor 0.3.5** in the full editor or setup popup. Use the hour and
+minute dropdowns for period start times and Sleep start and end. The editor
+entity, Configure options and optional sidebar remain available. Sidebar-only
+changes preserve poll/default-hold values without reloading thermostat controls.
+Thermostats sharing an account show one preference.
 
 Mode is read at startup and once per minute for each supported thermostat, as
 well as after schedule action readback. Phone registration/location permissions

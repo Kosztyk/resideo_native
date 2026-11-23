@@ -2,10 +2,12 @@
 
 import importlib.util
 import json
+import runpy
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+COMPONENT = ROOT / "custom_components/resideo_native"
 spec = importlib.util.spec_from_file_location(
     "resideo_packaging", ROOT / "tools/check_repository.py"
 )
@@ -19,15 +21,21 @@ class PackagingTests(unittest.TestCase):
         self.assertEqual(checker.inspect_repository(ROOT), [])
 
     def test_release_and_manifest(self):
-        data = json.loads(
-            (ROOT / "custom_components/resideo_native/manifest.json").read_text()
-        )
+        data = json.loads((COMPONENT / "manifest.json").read_text())
         self.assertEqual(data["domain"], "resideo_native")
-        self.assertEqual(data["version"], "0.3.4")
+        self.assertEqual(data["version"], runpy.run_path(str(COMPONENT / "const.py"))["VERSION"])
         self.assertEqual(
             data["dependencies"],
             ["binary_sensor", "climate", "select", "sensor", "switch", "water_heater"],
         )
+
+    def test_release_and_prerelease_version_formats(self):
+        for version in ("0.3.4", "0.3.5b1", "0.3.5b12", "1.0.0a0", "1.0.0rc1"):
+            with self.subTest(version=version):
+                self.assertIsNotNone(checker.VERSION_PATTERN.fullmatch(version))
+        for version in ("0.3", "v0.3.5b1", "0.3.5b", "0.3.5b-1", "0.3.5b1oops"):
+            with self.subTest(version=version):
+                self.assertIsNone(checker.VERSION_PATTERN.fullmatch(version))
 
     def test_hacs_metadata(self):
         data = json.loads((ROOT / "hacs.json").read_text())

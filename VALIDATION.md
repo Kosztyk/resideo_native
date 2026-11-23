@@ -1,8 +1,23 @@
-# Validation — Resideo Native 0.3.4
+# Resideo Native validation
+
+## v0.3.5 schedule editor and room-sensor checks
+
+Browser regression tests cover the Timed and Geofencing Sleep dropdowns,
+the save review flow, and the populated Timed popup at 320 px. The PR author
+tested the dropdowns in the Home Assistant macOS app using their branch.
+[PR #10 test report](https://github.com/Kosztyk/resideo_native/pull/10#issuecomment-7062811151)
+
+Room-sensor tests replay the issue #11 response shape. They verify missing
+measurements, explicit false motion, per-accessory exclusion flags and
+malformed accessory entries. The test harness uses synthetic Home Assistant
+and Resideo responses. [Issue #11](https://github.com/Kosztyk/resideo_native/issues/11)
+
+The [v0.3.5 release](https://github.com/Kosztyk/resideo_native/releases/tag/v0.3.5)
+links to the exact commit and GitHub validation run.
 
 ## v0.3.4 FlyCatcher evidence
 
-The stable integration is built from the tested 0.3.4b7 install archive. The
+v0.3.4 was built from the tested 0.3.4b7 install archive. The
 runtime component differs from that archive only by its stable version strings.
 The [tester’s report](https://github.com/Kosztyk/resideo_native/issues/9#issuecomment-6905093830)
 reported no issues on b7 with their FlyCatcher installation. See the
@@ -136,7 +151,7 @@ See [the APK trace](docs/SLEEP_PROTOCOL.md).
 [Validate Resideo Native](https://github.com/Kosztyk/resideo_native/actions/workflows/validate.yml)
 runs five independent jobs: packaging/Python compilation, the Python/HA suite,
 JavaScript/browser checks, **HACS Validation** and **Hassfest Validation**.
-No HACS checks are ignored. The release workflow publishes v0.3.4 only when all
+The workflow runs the full HACS validation. The release workflow publishes v0.3.5 only when all
 jobs succeed on a push to the current main commit. Its release body records the
 exact validated commit and workflow-run link. The CI checks on that commit are
 the authoritative remote result, rather than a local packaging check alone.

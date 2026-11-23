@@ -7,9 +7,12 @@ ROOT = Path(__file__).resolve().parents[1]
 COMP = ROOT / "custom_components/resideo_native"
 
 class HACSWriteVerificationTests(unittest.TestCase):
-    def test_release_version(self):
-        m = json.loads((COMP / "manifest.json").read_text())
-        self.assertEqual(m["version"], "0.3.4")
+    def test_versioned_frontend_assets_match_manifest(self):
+        version = json.loads((COMP / "manifest.json").read_text())["version"]
+        editor = (COMP / "www/schedule-editor.js").read_text()
+        launcher = (COMP / "www/schedule-entity.js").read_text()
+        self.assertIn(f'const EDITOR_VERSION = "{version}";', editor)
+        self.assertIn(f'./schedule-editor-{version}.js', launcher)
 
     def test_review_documentation_identifies_hardware_and_unknown_firmware(self):
         readme = (ROOT / "README.md").read_text()

@@ -11,6 +11,7 @@ from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from test_protocol import locations
 
+from custom_components.resideo_native.const import VERSION
 from custom_components.resideo_native.diagnostics import async_get_config_entry_diagnostics
 from custom_components.resideo_native.protocol import (
     AuthenticationError,
@@ -212,7 +213,7 @@ async def test_diagnostics_omit_all_account_material(hass, entry):
 
     text = json.dumps(await async_get_config_entry_diagnostics(hass, entry))
     data = json.loads(text)
-    assert data["integration_version"] == "0.3.4"
+    assert data["integration_version"] == VERSION
     assert data["thermostats"][0]["units"] == "Celsius"
     assert data["thermostats"][0]["api_temperature_units"] == "Fahrenheit"
     for secret in (

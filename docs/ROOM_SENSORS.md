@@ -2,7 +2,7 @@
 
 ## Supported devices
 
-Resideo Native 0.3.4 supports paired Honeywell Home Smart Room Sensors on legacy-cloud
+Resideo Native supports paired Honeywell Home Smart Room Sensors on legacy-cloud
 thermostats whose device type or model begins with `FlyCatcher`. This is the
 thermostat family used for T9/T10 room controls in the Resideo app. Retail models,
 firmware and backend support can vary. The [issue #9 field test](https://github.com/Kosztyk/resideo_native/issues/9)
@@ -20,13 +20,16 @@ Entities are added for fields that the cloud returns.
 
 | Entity | Reported value |
 | --- | --- |
-| Temperature and humidity | Current room readings. A room average can fill a missing reading when that room has exactly one wireless sensor. |
-| Motion and occupancy | Separate binary sensors for motion and occupancy. |
+| Temperature and humidity | Current readings reported for this accessory. |
+| Motion and occupancy | Separate binary sensors for readings reported by this accessory. |
 | Battery status and Battery low | Battery status text and a binary warning for recognized low-battery states. |
 | Signal strength, Sensor status and Connected | RSSI in dBm, accessory status and binary connectivity for recognized states. |
 
 Room-sensor entities are read-only. Readings and diagnostics follow account
-polling. The cloud can provide different fields for each accessory.
+polling. Since v0.3.5, existing measurement entities show **Unknown** when the
+cloud omits that accessory's data and **Unavailable** when the accessory is
+offline. Each accessory's diagnostic attributes use its reported priority
+exclusions. [Issue #11](https://github.com/Kosztyk/resideo_native/issues/11)
 
 ## Room priority and holds
 
@@ -66,7 +69,7 @@ confirmed Follow Me/Active Rooms and single, multiple and All rooms selections
 in both directions while on a hold. The [subsequent report](https://github.com/Kosztyk/resideo_native/issues/9#issuecomment-6902627913)
 identified the separate scheduled Follow Me transition and room-sensor registry
 warning. The [b7 follow-up](https://github.com/Kosztyk/resideo_native/issues/9#issuecomment-6905093830)
-reported no issues with that build. The stable component was promoted from b7
+reported no issues with that build. v0.3.4 was promoted from b7
 with version metadata changes.
 
 See also the [Resideo room priority API reference](https://developer.honeywellhome.com/lyric/apis).

@@ -16,6 +16,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.resideo_native.const import VERSION
 from custom_components.resideo_native.diagnostics import (
     async_get_config_entry_diagnostics,
 )
@@ -292,7 +293,7 @@ async def test_untraced_model_is_read_only(hass, client):
 
 async def test_diagnostics_include_dhw_without_account_material(hass, entry):
     data = await async_get_config_entry_diagnostics(hass, entry)
-    assert data["integration_version"] == "0.3.4"
+    assert data["integration_version"] == VERSION
     assert data["thermostats"][0]["hot_water"] is None
     assert data["thermostats"][1]["hot_water"]["dhw_state"] == "Off"
     text = json.dumps(data)

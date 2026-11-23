@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOMAIN = "resideo_native"
+VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:(?:a|b|rc)[0-9]+)?")
 
 
 def inspect_repository(root: Path = ROOT) -> list[str]:
@@ -21,7 +22,6 @@ def inspect_repository(root: Path = ROOT) -> list[str]:
             errors.append(f"Missing file: {path}")
         return target
 
-    component = root / "custom_components" / DOMAIN
     manifest_path = require(f"custom_components/{DOMAIN}/manifest.json")
     hacs_path = require("hacs.json")
     for path in (
@@ -42,8 +42,11 @@ def inspect_repository(root: Path = ROOT) -> list[str]:
                 errors.append(f"Manifest fields missing: {', '.join(sorted(absent))}")
             if manifest.get("domain") != DOMAIN:
                 errors.append("Manifest domain mismatch")
-            if manifest.get("version") != "0.3.4":
-                errors.append("Expected release version 0.3.4")
+            version = manifest.get("version")
+            if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
+                errors.append(
+                    "Manifest version must be major.minor.patch with an optional a, b, or rc suffix and number"
+                )
             if not manifest.get("codeowners"):
                 errors.append("Missing codeowner")
             expected_order = ["domain", "name"] + sorted(
@@ -53,8 +56,6 @@ def inspect_repository(root: Path = ROOT) -> list[str]:
                 errors.append("Manifest order must be domain, name, alphabetical")
             if "climate" not in manifest.get("dependencies", []):
                 errors.append("Missing dependency: climate")
-            if not re.fullmatch(r"\d+\.\d+\.\d+", str(manifest.get("version", ""))):
-                errors.append("Manifest version must be semantic major.minor.patch")
         except (UnicodeError, ValueError) as exc:
             errors.append(f"Manifest is not valid JSON: {exc}")
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.5 — Schedule time dropdowns and individual room-sensor readings
+
+- Use hour and minute dropdowns in Timed heating, hot water and Geofencing Sleep schedules. The Timed setup popup stacks fields on narrow screens so both digits stay visible. [PR #10 by Alex-ley-scrub](https://github.com/Kosztyk/resideo_native/pull/10)
+- Preserve stored times outside the minute increment, explain how to correct them on save, and handle browsers that emit only a change event for Sleep selections.
+- Keep missing room-sensor measurements unknown and preserve explicit motion readings. Read each accessory's priority-exclusion flags from its own record and skip malformed entries. [Issue #11](https://github.com/Kosztyk/resideo_native/issues/11)
+- Validate stable and prerelease manifest versions and use the manifest version in browser tests.
+
 ## 0.3.4 — FlyCatcher wireless room sensors and priority
 
 - Add available Smart Room Sensor measurements and diagnostics for compatible T9/T10-family thermostats.

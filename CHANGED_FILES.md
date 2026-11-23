@@ -1,8 +1,7 @@
-# Resideo Native v0.3.4 changed files
+# Resideo Native v0.3.5 changed files
 
-- `room_entity.py`, `sensor.py`, `binary_sensor.py` and `select.py` expose FlyCatcher accessories and room priority.
-- `protocol/client.py`, `protocol/device.py`, `protocol/rooms.py`, `protocol/device_types.py` and `protocol/priority_validation.py` handle discovery, command serialization, target parsing and sanitized diagnostics.
-- `coordinator.py` handles bounded room-priority readback. `diagnostics.py` includes room-sensor coverage and the active priority mode.
-- `climate.py` supports Home Assistant’s native temperature API. `__init__.py` and `manifest.json` register the room platforms.
-- `const.py`, the schedule editor JavaScript, packaging checks, test metadata and release workflow use the stable version.
-- `README.md`, `START_HERE.md`, `CHANGELOG.md`, `VALIDATION.md`, `HACS_PUBLISHING.md`, `docs/SCHEDULES.md`, `docs/ROOM_SENSORS.md` and `RELEASE_NOTES_0.3.4.md` document the new features and release.
+- `www/schedule-editor.js` renders hour/minute dropdowns, handles Sleep selection events, and responds to the width available in the editor and setup popup.
+- `protocol/rooms.py` keeps measurements and priority-exclusion flags tied to their wireless accessory and skips malformed accessory entries.
+- `const.py`, `manifest.json` and the two frontend modules use the stable version. `package.json`, `package-lock.json` and `.github/workflows/release.yml` use the same release version.
+- `tools/check_repository.py` accepts stable and prerelease manifest versions. The tests cover metadata, diagnostics, the browser popup, and individual room readings and flags.
+- `README.md`, `START_HERE.md`, `CHANGELOG.md`, `VALIDATION.md`, `HACS_PUBLISHING.md`, `docs/SCHEDULES.md`, `docs/ROOM_SENSORS.md` and `RELEASE_NOTES_0.3.5.md` document the changes and update instructions.

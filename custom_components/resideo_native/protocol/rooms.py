@@ -106,8 +106,8 @@ def parse_room_response(
 ) -> dict[str, RoomAccessory]:
     """Interpret native /group/{id}/rooms and /priority responses.
 
-    Room averages are used only when an individual room contains exactly one
-    wireless accessory; they are never misattributed to multiple accessories.
+    Individual accessory measurements come only from that accessory's values.
+    Room-level aggregates must not masquerade as wireless sensor readings.
     """
     if isinstance(payload, dict):
         root = payload.get("currentPriority")
@@ -131,7 +131,6 @@ def parse_room_response(
         accessories = room.get("accessories")
         if not isinstance(accessories, list):
             continue
-        remote = []
         for accessory in accessories:
             if not isinstance(accessory, dict):
                 continue
@@ -149,18 +148,14 @@ def parse_room_response(
             accessory_id = _id(accessory.get("accessoryId", accessory.get("id")))
             if accessory_id is None:
                 continue
-            remote.append((accessory_id, attrs, values))
-        for accessory_id, attrs, values in remote:
+
             temperature = convert_temperature(values.get("indoorTemperature", values.get("temperature")))
             humidity = _humidity(values.get("indoorHumidity"))
-            if len(remote) == 1:
-                if temperature is None:
-                    temperature = convert_temperature(room.get("avgTemperature", room.get("roomAvgTemp")))
-                if humidity is None:
-                    humidity = _humidity(room.get("avgHumidity", room.get("roomAvgHumidity")))
+            # Never substitute avgTemperature/avgHumidity/overallMotion from
+            # the room: they can include the thermostat or other sources.
+            # Preserve None for absent individual values, and False for a
+            # genuine motionDet=False reading (issue #11).
             motion = _as_bool(values.get("motionDet", values.get("detectMotion")))
-            if motion is None and len(remote) == 1:
-                motion = _as_bool(room.get("overallMotion"))
             occupancy = _as_bool(values.get("occupancyDet"))
             battery = _value_str(values.get("batteryStatus")) or _value_str(attrs.get("batteryStatus"))
             status = _value_str(values.get("status")) or _value_str(attrs.get("status"))

@@ -1,11 +1,19 @@
-# Schedule editor — Resideo Native 0.3.4
+# Schedule editor — Resideo Native 0.3.5
 
 ## Open the visible entity
 
 Replace the complete integration folder, restart HA and refresh the browser.
 Open **Settings → Devices & services → Resideo Native → your thermostat** and
 click **Schedule editor**, the entity with a calendar/edit icon and Open state.
-It opens that thermostat's page. Confirm **Editor 0.3.4**.
+It opens that thermostat's page. Confirm **Editor 0.3.5**.
+
+Use the hour and minute dropdowns for heating and hot-water period times and
+the start and end of Geofencing Sleep. The dropdowns avoid the time picker
+crash in the Home Assistant macOS app. On narrow screens, Timed setup places
+the temperature or hot-water state below the time controls.
+Stored minutes outside the allowed increment remain visible. Choose a valid
+minute when saving edited periods or Sleep settings.
+[PR #10](https://github.com/Kosztyk/resideo_native/pull/10)
 
 Each supported thermostat has **Heating schedule**, **Add scheduler to sidebar**
 and **Switch to Geofencing** switches on its device page. They can be added to a
@@ -189,7 +197,7 @@ and [Sunday/DHW retest](READBACK_RETEST.md).
 For an embedded editor, register this JavaScript module resource:
 
 ```text
-/resideo_native/schedule-editor-0.3.4.js
+/resideo_native/schedule-editor-0.3.5.js
 ```
 
 ```yaml

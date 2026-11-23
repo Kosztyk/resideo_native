@@ -1,13 +1,13 @@
-/* Resideo Native 0.3.4. Local UI; all account access stays in HA. */
+/* Resideo Native 0.3.5. Local UI; all account access stays in HA. */
 export const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-export const EDITOR_VERSION = "0.3.4";
+export const EDITOR_VERSION = "0.3.5";
 export const PANEL_ELEMENT = `resideo-schedule-panel-${EDITOR_VERSION.replaceAll(".", "-")}`;
 const clone = (v) => JSON.parse(JSON.stringify(v));
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const shownTime = v => /^\d{2}:\d{2}(?::00)?$/.test(v || "") ? v.slice(0, 5) : v || "";
-// Hour and minute selects instead of a native time input: the Home Assistant macOS app
-// (Mac Catalyst) crashes opening WebKit's time picker (UIPickerView is unsupported in the
-// Mac idiom), and iOS ignores the step. A value off the step grid stays selectable.
+// PR #10 by Alex-ley-scrub: use hour/minute selects instead of the native time picker,
+// which crashes the Home Assistant macOS app. Retain existing off-grid minutes
+// so merely opening an editor never silently changes a stored schedule.
 const pad2 = n => String(n).padStart(2, "0");
 export const timeSelects = (value, stepMinutes, attrs, label, disabled) => {
   const [h, m] = /^\d{2}:\d{2}$/.test(shownTime(value)) ? shownTime(value).split(":") : ["", ""];
@@ -16,12 +16,14 @@ export const timeSelects = (value, stepMinutes, attrs, label, disabled) => {
   const opts = (vals, cur) => `<option value="" ${cur ? "" : "selected"}>--</option>` + vals.map(v => `<option value="${v}" ${v === cur ? "selected" : ""}>${v}</option>`).join("");
   return `<span class="time-pick" role="group" aria-label="${esc(label)}"><select data-part="h" ${attrs} aria-label="${esc(label)} hour" ${disabled}>${opts(Array.from({length: 24}, (_, i) => pad2(i)), h)}</select><span aria-hidden="true">:</span><select data-part="m" ${attrs} aria-label="${esc(label)} minute" ${disabled}>${opts(minutes, m)}</select></span>`;
 };
-// "HH:MM" from a time-pick select (a missing minute becomes :00 once the hour is chosen), else the input's value.
+// Read a combined HH:MM value from a time selector without rounding existing minutes.
 const fieldValue = t => {
   if (!t.dataset.part) return t.value;
-  const g = t.closest(".time-pick"), h = g.querySelector('[data-part="h"]'), m = g.querySelector('[data-part="m"]');
-  if (h.value && !m.value) m.value = "00";
-  return h.value ? `${h.value}:${m.value}` : "";
+  const group = t.closest(".time-pick");
+  const hour = group.querySelector('[data-part="h"]');
+  const minute = group.querySelector('[data-part="m"]');
+  if (hour.value && !minute.value) minute.value = "00";
+  return hour.value ? `${hour.value}:${minute.value}` : "";
 };
 export function normalizedDays(days = {}) {
   return Object.fromEntries(DAYS.map(day => [day, (days[day] || []).map(p => ({...p, time: shownTime(p.time)}))]));
@@ -44,7 +46,7 @@ export function validateDraft(days, hot, limits = [], maxPeriods = 6, fullWeek =
       if (keys !== (hot ? "state,time" : "temperature,time")) return `${day}: invalid period fields.`;
       if (!/^(?:[01]\d|2[0-3]):[0-5]\d(?::00)?$/.test(p.time || "")) return `${day}: choose a valid time.`;
       const time = p.time.slice(0, 5);
-      if (timeStep && (Number(time.slice(0,2))*60+Number(time.slice(3,5)))%timeStep) return `${day}: times must use ${timeStep}-minute increments.`;
+      if (timeStep && (Number(time.slice(0,2))*60+Number(time.slice(3,5)))%timeStep) return `${day}: times must use ${timeStep}-minute increments. Choose a valid minute before saving.`;
       if (time <= previous) return `${day}: times must be in increasing order without duplicates.`;
       previous = time;
       if (hot) {
@@ -117,15 +119,52 @@ export function sleepDraftError(sleep,limits=[],step=null) {
   if(!sleep || Object.keys(sleep).sort().join(",")!=="end_time,start_time,temperature")return "Enter sleep start, end and temperature.";
   if(![sleep.start_time,sleep.end_time].every(t=>/^(?:[01]\d|2[0-3]):[0-5]\d(?::00)?$/.test(t || "")))return "Enter valid sleep start and end times.";
   if(sleep.start_time.slice(0,5)===sleep.end_time.slice(0,5))return "Sleep start and end must be different.";
-  if(step && [sleep.start_time,sleep.end_time].some(t=>(Number(t.slice(0,2))*60+Number(t.slice(3,5)))%step))return `Sleep times must use ${step}-minute increments.`;
+  if(step && [sleep.start_time,sleep.end_time].some(t=>(Number(t.slice(0,2))*60+Number(t.slice(3,5)))%step))return `Sleep times must use ${step}-minute increments. Choose a valid minute before saving.`;
   if(validateDraft({Monday:[{time:"00:00",temperature:sleep.temperature}]},false,limits))return "Enter a sleep temperature within the thermostat limits.";
   return null;
 }
 
+const COMPACT_STYLE = `
+  .shell{padding:18px 12px 30px}
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .week{display:flex;overflow:auto;padding:8px}
+  .day{min-width:95px;flex:1;margin:0 2px;padding:9px}
+  .day .summary,.day .bar{display:none}
+  .day-head{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:0}
+  .day-head strong{font-size:12px}
+  .panel{padding:16px}
+  .week.panel{padding:8px}
+  .period-row{gap:7px;grid-template-columns:20px minmax(100px,1fr) minmax(90px,1fr) 32px}
+  .toolbar label{min-width:100%;flex-basis:100%}
+  .review{padding:10px}
+  .modal{padding:18px}
+  .heading{margin-bottom:16px}
+  h1{font-size:23px}
+  .menu{display:block}
+  .reviewgrid{grid-template-columns:1fr 1fr}
+`;
+
+const NARROW_STYLE = `
+  .period-row{
+    grid-template-columns:18px minmax(0,1fr) 32px;
+    grid-template-areas:"number time time" ". value remove";
+    gap:6px;
+  }
+  .period-row>.num{grid-area:number}
+  .period-row>div.field{grid-area:time}
+  .period-row>label.field{grid-area:value;min-width:0}
+  .period-row>.delete{grid-area:remove}
+  .toolbar div.field{min-width:0;flex-basis:100%}
+`;
+
 const STYLE = `
+:host{container:resideo-schedule-editor / inline-size}
 :host{display:block;color:var(--primary-text-color,#20232b);font:14px/1.5 var(--paper-font-body1_-_font-family,system-ui,sans-serif);--accent:var(--primary-color,#b51b2a);--surface:var(--card-background-color,#fff);--muted:var(--secondary-text-color,#69717f);--line:var(--divider-color,#e3e7ed);--soft:var(--secondary-background-color,#f3f5f8)}
 *{box-sizing:border-box}button,input,select{font:inherit;color:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}button{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:10px;min-height:40px}button:hover:not(:disabled){background:var(--soft)}button.primary{background:var(--accent);border-color:var(--accent);color:var(--text-primary-color,#fff)}button.danger{color:var(--error-color,#b3261e)}button.small{padding:5px 10px;min-height:34px}h1,h2,h3,p{margin:0}h1{font-size:27px;letter-spacing:-.7px}h2{font-size:18px}h3{font-size:15px}.shell{max-width:1140px;margin:auto;padding:28px 24px 40px}.heading{display:flex;gap:14px;align-items:center;margin-bottom:24px}.mark{width:44px;height:44px;border-radius:13px;background:#b51b2a;color:white;display:grid;place-items:center;font-weight:800;font-size:23px}.sub,.muted{color:var(--muted)}.sub{font-size:13px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:20px;margin-bottom:18px}.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.toolbar label,.toolbar div.field{flex:1;min-width:230px}.time-pick{display:flex;align-items:center;gap:4px}.time-pick select{width:auto;flex:1;min-width:52px;padding-left:8px;padding-right:4px}.toolbar label span,label.field span,div.field>span:first-child{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}select,input{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:9px 10px;min-height:40px}select{width:100%}.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.badge{white-space:nowrap;display:inline-block;font-size:12px;border-radius:20px;padding:4px 10px;background:var(--soft);color:var(--muted)}.meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:15px}.status{padding:13px 16px;border-radius:11px;margin-bottom:18px;background:var(--soft);white-space:pre-wrap;overflow-wrap:anywhere}.status.error{background:var(--error-state-color-bg,#fcebea);color:var(--error-color,#b3261e)}.status.warning{background:var(--warning-color-bg,#fff8e1);color:var(--primary-text-color,#20232b)}.status.success{background:var(--success-state-color-bg,#e8f5eb);color:var(--success-color,#22703a)}.layout{display:grid;grid-template-columns:minmax(235px,.85fr) minmax(340px,1.6fr);gap:18px}.week{padding:10px}.day{width:100%;text-align:left;display:block;border:1px solid transparent;border-radius:11px;margin:3px 0;padding:12px}.day.active{border-color:var(--accent);background:var(--soft)}.day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}.day-head strong{font-size:14px}.dot{font-size:11px;color:var(--accent)}.summary{color:var(--muted);font-size:11px}.bar{height:6px;border-radius:4px;overflow:hidden;display:flex;background:var(--soft);margin:8px 0}.bar i{display:block;min-width:1px}.period-head>div{min-width:0;flex:1}.period-head>.badge{flex:none}.period-head{display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:18px}.period-row{display:grid;grid-template-columns:27px minmax(110px,1fr) minmax(105px,1fr) 36px;gap:10px;align-items:end;margin:12px 0}.num{align-self:center;color:var(--muted);font-size:12px}input{width:100%}.delete{padding:4px;font-size:19px}.empty{padding:32px 8px;text-align:center;color:var(--muted)}.copy{border-top:1px solid var(--line);margin-top:23px;padding-top:16px}.copy p{font-size:12px;color:var(--muted);margin-top:3px}.checks{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.checks label,.confirm{display:flex;align-items:center;gap:7px}.checks input,.confirm input{width:auto;min-height:0;accent-color:var(--accent)}.footer{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:18px;margin-top:20px}.footer p{font-size:12px;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.explain{margin-bottom:16px;color:var(--muted);font-size:13px}.notice{border-left:3px solid var(--accent);padding:10px 13px;background:var(--soft);margin-bottom:16px}.review{position:fixed;inset:0;z-index:20;background:#0007;display:flex;align-items:center;justify-content:center;padding:20px}.modal{background:var(--surface);border-radius:18px;max-height:90vh;overflow:auto;width:700px;max-width:100%;padding:24px;box-shadow:0 20px 80px #0004}.modal h2{margin-bottom:8px}.reviewday{border-top:1px solid var(--line);padding:13px 0}.reviewgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}.reviewgrid span{font-size:12px;color:var(--muted)}.reviewgrid pre{font:12px/1.65 system-ui;margin:4px 0;white-space:pre-wrap}.confirm{margin:16px 0;align-items:start}.file{display:none}code{font-size:12px;overflow-wrap:anywhere}.mobile-head{display:flex;align-items:center;gap:10px}.menu{display:none}
-@media(max-width:750px){.shell{padding:18px 12px 30px}.layout{grid-template-columns:1fr}.week{display:flex;overflow:auto;padding:8px}.day{min-width:95px;flex:1;margin:0 2px;padding:9px}.day .summary,.day .bar{display:none}.day-head{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:0}.day-head strong{font-size:12px}.panel{padding:16px}.week.panel{padding:8px}.period-row{gap:7px;grid-template-columns:20px minmax(100px,1fr) minmax(90px,1fr) 32px}.toolbar label{min-width:100%;flex-basis:100%}.review{padding:10px}.modal{padding:18px}.heading{margin-bottom:16px}h1{font-size:23px}.menu{display:block}.reviewgrid{grid-template-columns:1fr 1fr}}
+@media(max-width:750px){${COMPACT_STYLE}}
+@container resideo-schedule-editor (max-width:750px){${COMPACT_STYLE}}
+@media(max-width:480px){${NARROW_STYLE}}
+@container resideo-schedule-editor (max-width:480px){${NARROW_STYLE}}
 `;
 
 const ElementBase = globalThis.HTMLElement || class {};
@@ -149,7 +188,7 @@ export class ResideoScheduleEditor extends ElementBase {
     this.shadowRoot.addEventListener("input", e => {
       if (e.target.dataset.field) this._updatePeriod(e.target);
       if (e.target.dataset.geo) this._geoDraft[e.target.dataset.geo]=e.target.value.trim()===""?null:Number(e.target.value);
-      if (e.target.dataset.sleep) this._sleepDraft[e.target.dataset.sleep]=e.target.dataset.sleep==="temperature"?(e.target.value.trim()===""?null:Number(e.target.value)):fieldValue(e.target);
+      if (e.target.dataset.sleep) this._updateSleep(e.target);
     });
     this.shadowRoot.addEventListener("keydown", e => {
       if (!this._review) return;
@@ -323,6 +362,14 @@ export class ResideoScheduleEditor extends ElementBase {
     if (t.id === "confirm-conversion") {this._conversionConfirmed=t.checked; this.render(); return;}
     if (t.dataset.copy) {t.checked ? this._targets.add(t.dataset.copy) : this._targets.delete(t.dataset.copy); this.render(); return;}
     if (t.dataset.field && !this._busy) this._updatePeriod(t);
+    // Some native WebKit dropdowns dispatch change without input.
+    if(t.dataset.sleep) this._updateSleep(t);
+  }
+  _updateSleep(t) {
+    if (this._busy || !this._sleepEditing) return;
+    this._sleepDraft[t.dataset.sleep] = t.dataset.sleep === "temperature"
+      ? (t.value.trim() === "" ? null : Number(t.value))
+      : fieldValue(t);
   }
   _updatePeriod(t) {
     if (this._busy) return;

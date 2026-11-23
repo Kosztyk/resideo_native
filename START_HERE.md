@@ -1,4 +1,4 @@
-# Resideo Native 0.3.4
+# Resideo Native 0.3.5
 
 Update through HACS or replace the complete `/config/custom_components/resideo_native/`
 folder from the release ZIP. Restart Home Assistant and keep the existing account
@@ -6,20 +6,15 @@ configuration.
 
 On a supported T9/T10-family (FlyCatcher) thermostat, find **Room priority** on
 the thermostat’s device page. Look for paired room sensors under the integration’s
-devices. See the [room sensor guide](docs/ROOM_SENSORS.md),
-[release notes](RELEASE_NOTES_0.3.4.md) and [validation evidence](VALIDATION.md).
+devices. Missing accessory readings may appear as **Unknown** until the sensor
+reports them. See the [room sensor guide](docs/ROOM_SENSORS.md),
+[release notes](RELEASE_NOTES_0.3.5.md) and [validation evidence](VALIDATION.md).
 
 ## Schedule editor and hot water
 
-This release includes heating/DHW schedule actions and editing, visible native
-schedule controls, optional sidebar access and reviewed Geofencing/sleep setup.
-Heating/DHW action and real Off results are hardware-confirmed for the reported
-T6H700RW4011 setup; see [the evidence matrix](docs/TESTING_2026-10-27.md).
-That hardware evidence is from 0.3.1. This build adds the contribution in
-[PR #6](https://github.com/Kosztyk/resideo_native/pull/6), with the review fixes:
-bounded follow-up GETs, fresh online confirmation and independent zone tasks.
-Its new behavior is covered by synthetic HA tests; no new live hardware test
-is claimed.
+Use the hour and minute dropdowns to set Timed heating, hot water and
+Geofencing Sleep times. They replace the time control that crashed the
+Home Assistant macOS app. [PR #10](https://github.com/Kosztyk/resideo_native/pull/10)
 
 1. Replace the complete `/config/custom_components/resideo_native/` folder.
 2. Fully restart Home Assistant and refresh the browser. Keep the account.
@@ -34,7 +29,7 @@ is claimed.
    **Review & save**, confirm and **Save to Resideo**.
 7. **Cancel** closes either popup without changing the cloud or switch state.
 8. The full **Schedule editor** has the same create/edit/remove sleep controls.
-   Confirm **Editor 0.3.4** in the popup or full page.
+   Confirm **Editor 0.3.5** in the popup or full page.
 
 The mode switch reflects confirmed cloud type; the separate Heating schedule
 switch controls native schedule On/Off. Opening setup and saving sleep into a
@@ -44,13 +39,5 @@ Phone geofence registration/location permissions remain in the official app.
 **Add scheduler to sidebar** remains Off by default and preserves existing
 preferences. No household temperatures or periods are installed by this update.
 
-To test this update, turn hot water on/off or start/cancel boost, then compare
-the HA mode with the official app. A delayed response receives at most three
-extra GETs; heating commands and background polling keep their existing behavior.
-Keep your current account and check **Editor 0.3.4** after restarting.
-
 For sleep settings, use [the focused sleep retest](docs/SLEEP_PAYLOAD_RETEST.md).
 The [full switch/sleep test plan](docs/MODE_SWITCH_TEST_PLAN.md) is also included.
-See [release notes](RELEASE_NOTES_0.3.2.md) and [validation](VALIDATION.md).
-For HACS updates, download the release and restart HA. Manual installation uses
-the complete integration folder. Account configuration is retained.
