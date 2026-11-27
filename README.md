@@ -12,6 +12,14 @@ This is an independent community integration for the legacy Resideo / Honeywell 
 
 **Quick links:** [Installation](#installation) · [Room sensors and priority](#wireless-room-sensors-and-room-priority) · [Schedule editor](#schedule-entities-and-editor) · [Validation](VALIDATION.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
+## What's new in v0.3.6
+
+- [Issue #13](https://github.com/Kosztyk/resideo_native/issues/13): native Jasper/T5/T6 fan modes via `climate.set_fan_mode`, using `auto`, `on` and `diffuse` (Circulate), limited to the modes explicitly advertised by the device.
+- The dedicated mobile fan endpoint sends only `mode`, without rewriting HVAC mode, setpoints, hold, schedule or fan speed. The issue #13 reporter confirmed on three Jasper heat/cool thermostats with Home Assistant 2026.11.0 that Permanent Hold, Heat mode and setpoints were preserved when changing fan modes in v0.3.6b1. Changes were confirmed in about 10–20 seconds without warnings.
+- Cloud-reported `fanRunning` provides an optional read-only **Fan running** binary sensor and fan-only HVAC action when equipment is idle or configured HVAC is Off (with explicit positive fan telemetry). Missing status stays unknown; demand flags are not treated as motor activity.
+
+This offline production candidate is not yet published; install manually until release validation completes. The beta reporter did not receive fan-running telemetry; the optional sensor was absent. Cooling operation, temporary hold, following schedule and the new Off-mode behavior have not been hardware-verified. See [release notes](RELEASE_NOTES_0.3.6.md) and [fan protocol and test plan](docs/FAN_CONTROL.md).
+
 ## What's new in v0.3.5
 
 - Hour and minute dropdowns fix the schedule time picker crash in the Home Assistant macOS app. They cover Timed heating, hot water and Geofencing Sleep. The Timed setup popup keeps both digits visible at narrow widths. [PR #10 by Alex-ley-scrub](https://github.com/Kosztyk/resideo_native/pull/10)
@@ -36,6 +44,7 @@ The integration is based on the protocol used by Resideo Smart Home Android **6.
 ## Features
 
 - One `climate` entity per supported thermostat.
+- Jasper fan controls (`auto`, `on`, `diffuse`) when the device advertises those modes; optional read-only fan-running status on devices that report it.
 - Jasper/T6R domestic hot water: reported on/off state, follow schedule, always on/off, and 30/60/90-minute boost controls when a nested `dhwZone` is present.
 - Bounded follow-up reads after hot-water commands, stopping when a fresh cloud response confirms the requested mode.
 - Current temperature, target temperature, and device-reported temperature limits.
@@ -155,7 +164,7 @@ Readback checks day coverage as well as times and temperature. See
 [the protocol investigation](docs/SLEEP_PROTOCOL.md).
 
 Replace the complete integration folder, restart HA and refresh the browser.
-Confirm **Editor 0.3.5** in the full editor or setup popup. Use the hour and
+Confirm **Editor 0.3.6** in the full editor or setup popup. Use the hour and
 minute dropdowns for period start times and Sleep start and end. The editor
 entity, Configure options and optional sidebar remain available. Sidebar-only
 changes preserve poll/default-hold values without reloading thermostat controls.
@@ -479,7 +488,7 @@ For an issue report, include the integration version, Home Assistant version, th
 ## Current limitations
 
 - Cloud polling; SignalR push updates are not implemented.
-- No vacation creation, phone geofence setup, hot-water temperature controls, fan controls, or installer settings.
+- No vacation creation, phone geofence setup, hot-water temperature controls, fan speed controls, fan `FollowSchedule` writes, or installer settings. Fan mode writes are limited to explicitly identified Jasper devices with reported capabilities; other model families have no fan-mode writes.
 - No automatic browser callback helper or extension is included in the current release.
 - Check the [validation evidence](VALIDATION.md) for the firmware and hardware configurations covered by device testing.
 - Resideo service or authentication changes can require integration updates.

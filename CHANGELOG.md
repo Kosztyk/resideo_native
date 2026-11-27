@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.6 — Jasper fan control
+
+- Promote the hardware-tested v0.3.6b1 mode-only native POST and Home Assistant `auto`, `on`, `diffuse` mappings ([issue #13](https://github.com/Kosztyk/resideo_native/issues/13)). The reporter confirmed Permanent Hold, Heat and setpoint preservation across three Jasper thermostats on HA 2026.11.0.
+- Allow explicit Jasper model fallback for known generic device types; reject known conflicting families and malformed identifiers. Other model families, FollowSchedule and speed writes remain unsupported.
+- When configured HVAC is Off, explicit fan-running telemetry can report HVAC Fan; missing or false telemetry preserves Off. Heating/cooling retain precedence when HVAC is enabled. Fan activity remains optional and was not reported by the three beta devices.
+- Add fan-specific delayed, bounded, superseded and independent read-back regression cases, protocol failure/concurrency tests and typed fan sensor discovery. Preserve existing coordinator and native command behavior.
+- Synchronize stable version metadata and prepare the v0.3.6-only release workflow. Hosted validation and publication are pending.
+
 ## 0.3.5 — Schedule time dropdowns and individual room-sensor readings
 
 - Use hour and minute dropdowns in Timed heating, hot water and Geofencing Sleep schedules. The Timed setup popup stacks fields on narrow screens so both digits stay visible. [PR #10 by Alex-ley-scrub](https://github.com/Kosztyk/resideo_native/pull/10)

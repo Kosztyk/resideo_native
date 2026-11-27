@@ -1,6 +1,6 @@
-# Resideo Native 0.3.5
+# Resideo Native 0.3.6
 
-Update through HACS or replace the complete `/config/custom_components/resideo_native/`
+This offline v0.3.6 production candidate is not yet published through HACS. Back up and replace the complete `/config/custom_components/resideo_native/`
 folder from the release ZIP. Restart Home Assistant and keep the existing account
 configuration.
 
@@ -8,7 +8,16 @@ On a supported T9/T10-family (FlyCatcher) thermostat, find **Room priority** on
 the thermostat’s device page. Look for paired room sensors under the integration’s
 devices. Missing accessory readings may appear as **Unknown** until the sensor
 reports them. See the [room sensor guide](docs/ROOM_SENSORS.md),
-[release notes](RELEASE_NOTES_0.3.5.md) and [validation evidence](VALIDATION.md).
+[release notes](RELEASE_NOTES_0.3.6.md) and [validation evidence](VALIDATION.md).
+
+## Jasper fan control
+
+Open the climate entity and check whether Fan mode is available. The reported
+modes determine what appears; `diffuse` means Circulate. Check the current hold,
+setpoints and system mode before and after a fan-only change. If the cloud
+reports a boolean `fanRunning`, a separate Fan running binary sensor appears. The v0.3.6b1 tester confirmed fan control and Permanent Hold preservation on three Jasper thermostats; fan-running telemetry was not available on those devices. Follow the
+[fan test plan](docs/FAN_CONTROL.md) and report unexpected changes. To roll back,
+restore the v0.3.5 component folder and restart; account settings are unchanged.
 
 ## Schedule editor and hot water
 
@@ -29,7 +38,7 @@ Home Assistant macOS app. [PR #10](https://github.com/Kosztyk/resideo_native/pul
    **Review & save**, confirm and **Save to Resideo**.
 7. **Cancel** closes either popup without changing the cloud or switch state.
 8. The full **Schedule editor** has the same create/edit/remove sleep controls.
-   Confirm **Editor 0.3.5** in the popup or full page.
+   Confirm **Editor 0.3.6** in the popup or full page.
 
 The mode switch reflects confirmed cloud type; the separate Heating schedule
 switch controls native schedule On/Off. Opening setup and saving sleep into a

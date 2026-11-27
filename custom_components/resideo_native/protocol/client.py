@@ -344,6 +344,21 @@ class NativeClient(ScheduleClientMixin, ScheduleModesMixin):
                 "PUT", self._path(device, "thermostat/Mode"), {"thermostatMode": mode}
             )
 
+    async def set_fan_mode(self, device_id: str, mode: str) -> None:
+        """Jasper fan-only command; never send HVAC, setpoints or hold fields.
+
+        APK 6.21.2 Dd/d.c and y9/u.c. Other model families may require
+        additional HoldStatus/HoldUntil handling and are not writable here.
+        """
+        async with self._command_lock:
+            device = self._device(device_id)
+            if not device.can_control_fan or mode not in device.allowed_fan_modes:
+                raise CommandError("This fan mode is not supported by the thermostat")
+            await self._request(
+                "POST", self._path(device, "fan/changeableValues", "v2/"),
+                {"mode": mode},
+            )
+
     async def set_temperature(
         self,
         device_id: str,

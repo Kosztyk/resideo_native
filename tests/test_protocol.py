@@ -520,6 +520,153 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
         await self.client.set_hold("T6-test", "NoHold")
         self.assertEqual(json.loads(self.calls[-1][3]), {"Status": "NoHold"})
 
+    async def test_jasper_fan_write_is_isolated_from_hvac_and_holds(self):
+        raw = self.payload[0]["devices"][1]
+        raw["settings"] = {"fan": {"allowedModes": ["Auto", "On", "Circulate"],
+                                      "changeableValues": {"mode": "Auto"}}}
+        raw["scheduleStatus"] = "Resume"
+        values = raw["thermostat"]["changeableValues"]
+        values.update(heatSetpoint=71, coolSetpoint=77, autoChangeoverActive=True,
+                      holdUntil="22:00:00", nextPeriodTime="23:00:00")
+        for hold in ("PermanentHold", "TemporaryHold", "HoldUntil", "NoHold"):
+            values["thermostatSetpointStatus"] = hold
+            await self.client.update()
+            before = deepcopy(self.client.devices["T6-test"].raw)
+            for mode in ("On", "Circulate", "Auto"):
+                baseline = len(self.calls)
+                await self.client.set_fan_mode("T6-test", mode)
+                self.assertEqual(len(self.calls), baseline + 1)
+                method, path, _, body = self.calls[-1]
+                self.assertEqual((method, path), ("POST", "/api/v2/locations/123/devices/T6-test/fan/changeableValues"))
+                self.assertEqual(json.loads(body), {"mode": mode})
+                self.assertEqual(self.client.devices["T6-test"].raw, before)
+
+    async def test_fan_rejects_unsupported_modes_models_offline_and_removed_device(self):
+        raw = self.payload[0]["devices"][1]
+        raw["settings"] = {"fan": {"allowedModes": ["Auto", "On", "FollowSchedule"]}}
+        await self.client.update()
+        device = self.client.devices["T6-test"]
+        baseline = len(self.calls)
+        for mode in ("Circulate", "FollowSchedule", "on", "Unknown", None):
+            with self.assertRaises(CommandError):
+                await self.client.set_fan_mode("T6-test", mode)
+        for model in ("FlyCatcher", "Storm", "Houdini", "Blackbeard", "UnverifiedFamily"):
+            device.raw["deviceType"] = model
+            with self.assertRaises(CommandError):
+                await self.client.set_fan_mode("T6-test", "On")
+        device.raw["deviceType"] = "Jasper"
+        device.raw["isAlive"] = False
+        with self.assertRaises(CommandError):
+            await self.client.set_fan_mode("T6-test", "On")
+        device.raw["isAlive"] = True
+        device.raw.pop("settings")
+        with self.assertRaises(CommandError):
+            await self.client.set_fan_mode("T6-test", "On")
+        with self.assertRaises(CommandError):
+            await self.client.set_fan_mode("missing", "On")
+        self.assertEqual(len(self.calls), baseline)
+
+    async def test_fan_model_fallback_and_conflicting_families(self):
+        raw = self.payload[0]["devices"][1]
+        raw["settings"] = {"fan": {"allowedModes": ["Auto", "On"]}}
+        for device_type, model, supported in (
+            ("Thermostat", "Jasper", True), ("unknown", " jasper ", True),
+            (None, "Jasper", True), ("LCC", "Jasper", True),
+            ("Jasper", "T6 Pro", True), ("Jasper", "FlyCatcher", False),
+            ("FlyCatcher T10", "Jasper", False), ("Storm", "Jasper", False),
+            ("Jasper", "Houdini", False), ("Blackbeard", "Jasper", False),
+            ("Focus Pro", "Jasper", False), ("FutureFamily", "Jasper", False),
+            ("Thermostat", "T6", False), (None, None, False),
+            ([], "Jasper", False), ("Jasper", {}, False),
+        ):
+            with self.subTest(device_type=device_type, model=model):
+                raw.update(deviceType=device_type, deviceModel=model)
+                device = parse_locations(self.payload)["T6-test"]
+                self.assertIs(device.can_control_fan, supported)
+
+    async def test_fan_http_400_is_sanitized_without_fallback(self):
+        self.payload[0]["devices"][1]["settings"] = {"fan": {"allowedModes": ["On"]}}
+        await self.client.update()
+        path = "/api/v2/locations/123/devices/T6-test/fan/changeableValues"
+        self.failures[path] = 400
+        baseline = len(self.calls)
+        with self.assertRaisesRegex(CommandError, r"^Resideo rejected the command \(HTTP 400\)$"):
+            await self.client.set_fan_mode("T6-test", "On")
+        self.assertEqual([(c[0], c[1]) for c in self.calls[baseline:]], [("POST", path)])
+
+    async def test_fan_http_500_does_not_repeat_write(self):
+        self.payload[0]["devices"][1]["settings"] = {"fan": {"allowedModes": ["On"]}}
+        await self.client.update()
+        path = "/api/v2/locations/123/devices/T6-test/fan/changeableValues"
+        self.failures[path] = 500
+        baseline = len(self.calls)
+        with self.assertRaises(CannotConnect):
+            await self.client.set_fan_mode("T6-test", "On")
+        self.assertEqual([(c[0], c[1]) for c in self.calls[baseline:]], [("POST", path)])
+
+    async def test_fan_http_429_enforces_backoff(self):
+        self.payload[0]["devices"][1]["settings"] = {"fan": {"allowedModes": ["On"]}}
+        await self.client.update()
+        path = "/api/v2/locations/123/devices/T6-test/fan/changeableValues"
+        self.failures[path] = 429
+        baseline = len(self.calls)
+        for _ in range(2):
+            with self.assertRaises(RateLimited):
+                await self.client.set_fan_mode("T6-test", "On")
+        self.assertEqual([(c[0], c[1]) for c in self.calls[baseline:]], [("POST", path)])
+
+    async def test_concurrent_fan_writes_are_isolated_by_device(self):
+        raw = self.payload[0]["devices"][1]
+        raw["settings"] = {"fan": {"allowedModes": ["On", "Circulate"]}}
+        other = deepcopy(raw)
+        other["deviceID"] = "T6-other"
+        self.payload[0]["devices"].append(other)
+        await self.client.update()
+        baseline = len(self.calls)
+        await asyncio.gather(
+            self.client.set_fan_mode("T6-test", "On"),
+            self.client.set_fan_mode("T6-other", "Circulate"),
+        )
+        self.assertCountEqual(
+            [(c[0], c[1], json.loads(c[3])["mode"]) for c in self.calls[baseline:]],
+            [("POST", "/api/v2/locations/123/devices/T6-test/fan/changeableValues", "On"),
+             ("POST", "/api/v2/locations/123/devices/T6-other/fan/changeableValues", "Circulate")],
+        )
+
+    async def test_fan_capabilities_revalidated_after_lock(self):
+        self.payload[0]["devices"][1]["settings"] = {"fan": {"allowedModes": ["On"]}}
+        await self.client.update()
+        baseline = len(self.calls)
+        async with self.client._command_lock:
+            pending = asyncio.create_task(self.client.set_fan_mode("T6-test", "On"))
+            await asyncio.sleep(0)
+            self.assertFalse(pending.done())
+            self.client.devices["T6-test"].fan_settings["allowedModes"] = ["Auto"]
+        with self.assertRaises(CommandError):
+            await pending
+        self.assertEqual(len(self.calls), baseline)
+
+    async def test_fan_data_are_strict_and_never_inferred(self):
+        raw = self.payload[0]["devices"][1]
+        for settings in (None, [], "bad", {"fan": []}, {"fan": {"allowedModes": "Auto", "changeableValues": [], "fanRunning": 1}}):
+            raw["settings"] = settings
+            device = parse_locations(self.payload)["T6-test"]
+            self.assertFalse(device.can_control_fan)
+            self.assertIsNone(device.fan_mode)
+            self.assertIsNone(device.fan_running)
+        raw["settings"] = {"fan": {"allowedModes": ["Auto", "On", "Auto", None, {}, "Circulate", "FollowSchedule", "Future"],
+                                    "changeableValues": {"mode": "Circulate"}, "fanRunning": False}}
+        raw["thermostat"]["operationStatus"] = {"mode": "EquipmentOff", "fanRequest": True, "circulationFanRequest": True}
+        device = parse_locations(self.payload)["T6-test"]
+        self.assertEqual(device.allowed_fan_modes, ["Auto", "On", "Circulate"])
+        self.assertTrue(device.can_control_fan)
+        self.assertEqual(device.fan_mode, "Circulate")
+        self.assertIs(device.fan_running, False)
+        self.assertIs(device.fan_request, True)
+        self.assertIs(device.circulation_fan_request, True)
+        del raw["settings"]["fan"]["fanRunning"]
+        self.assertIsNone(device.fan_running)
+
     async def test_invalid_and_unsupported_commands_never_reach_network(self):
         await self.client.update()
         baseline = len(self.calls)

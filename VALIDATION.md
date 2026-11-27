@@ -1,5 +1,12 @@
 # Resideo Native validation
 
+## v0.3.6 Jasper fan control — offline production candidate
+
+- Source: Android APK 6.21.2, `Dd/d.c`, `y9/u.c`, `StatDeviceResponse.settings.fan`; HA Core Lyric 2026.11.0 and aiolyric 2.2.1 conventions.
+- Hardware evidence from the issue #13 reporter: v0.3.6b1 on HA 2026.11.0, three Jasper heat/cool thermostats (US account). Supported modes and initial values were correct; mode changes confirmed within 10–20 seconds without warnings. Permanent Hold, Heat and setpoints were preserved, including a raised setpoint and temperature changes while the fan was On. No usable fanRunning telemetry was apparent; no binary sensor was created. The v0.3.6 write endpoint and payload are unchanged.
+- The new model fallback and explicit fan action while HVAC is Off are not hardware-tested. Cooling operation, Temporary Hold and following schedule were not explicitly tested by the reporter.
+- See [release notes](RELEASE_NOTES_0.3.6.md) for offline checks and [fan protocol/test plan](docs/FAN_CONTROL.md) for details. The HA runtime suite, browser tests and hosted HACS/Hassfest checks remain pending; no live commands were sent during this build.
+
 ## v0.3.5 schedule editor and room-sensor checks
 
 Browser regression tests cover the Timed and Geofencing Sleep dropdowns,

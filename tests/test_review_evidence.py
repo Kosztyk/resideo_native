@@ -14,6 +14,18 @@ class HACSWriteVerificationTests(unittest.TestCase):
         self.assertIn(f'const EDITOR_VERSION = "{version}";', editor)
         self.assertIn(f'./schedule-editor-{version}.js', launcher)
 
+    def test_stable_release_gate_and_versioned_notes(self):
+        version = json.loads((COMP / "manifest.json").read_text())["version"]
+        workflow = (ROOT / ".github/workflows/release.yml").read_text()
+        self.assertIn(f'[[ "$VERSION" != "{version}" ]]', workflow)
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", workflow)
+        self.assertIn("github.event.workflow_run.event == 'push'", workflow)
+        self.assertIn("github.event.workflow_run.head_branch == 'main'", workflow)
+        self.assertIn('[[ "$CURRENT_SHA" != "$VALIDATED_SHA" ]]', workflow)
+        self.assertTrue((ROOT / f"RELEASE_NOTES_{version}.md").is_file())
+        for name in ("package.json", "package-lock.json"):
+            self.assertEqual(json.loads((ROOT / name).read_text())["version"], version)
+
     def test_review_documentation_identifies_hardware_and_unknown_firmware(self):
         readme = (ROOT / "README.md").read_text()
         validation = (ROOT / "VALIDATION.md").read_text()

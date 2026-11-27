@@ -40,7 +40,7 @@ except ModuleNotFoundError:
 )
 def test_operation_status_mapping(operation, hvac_mode, expected):
     entity = SimpleNamespace(
-        device=SimpleNamespace(operation=operation),
+        device=SimpleNamespace(operation=operation, fan_running=None),
         hvac_mode=hvac_mode,
     )
     assert ResideoThermostat.hvac_action.fget(entity) == expected
@@ -48,3 +48,22 @@ def test_operation_status_mapping(operation, hvac_mode, expected):
 
 def test_unavailable_thermostat_has_no_action():
     assert ResideoThermostat.hvac_action.fget(SimpleNamespace(device=None)) is None
+
+
+@pytest.mark.parametrize(("operation", "mode", "running", "expected"), [
+    ("EquipmentOff", HVACMode.HEAT, True, HVACAction.FAN),
+    ("EquipmentOff", HVACMode.COOL, False, HVACAction.IDLE),
+    ("EquipmentOff", HVACMode.HEAT, None, HVACAction.IDLE),
+    ("Heat", HVACMode.HEAT, True, HVACAction.HEATING),
+    ("Cool", HVACMode.COOL, True, HVACAction.COOLING),
+    ("EquipmentOff", HVACMode.OFF, True, HVACAction.FAN),
+    ("Heat", HVACMode.OFF, True, HVACAction.FAN),
+    (None, HVACMode.OFF, True, HVACAction.FAN),
+    ("Fan", HVACMode.OFF, False, HVACAction.OFF),
+    ("Fan", HVACMode.OFF, None, HVACAction.OFF),
+    ("EquipmentOff", HVACMode.OFF, False, HVACAction.OFF),
+    (None, HVACMode.HEAT, True, None),
+])
+def test_reported_fan_running_action(operation, mode, running, expected):
+    entity = SimpleNamespace(device=SimpleNamespace(operation=operation, fan_running=running), hvac_mode=mode)
+    assert ResideoThermostat.hvac_action.fget(entity) == expected

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
+from copy import deepcopy
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -36,6 +38,7 @@ def client():
     client.set_temperature = AsyncMock()
     client.set_mode = AsyncMock()
     client.set_hold = AsyncMock()
+    client.set_fan_mode = AsyncMock()
     with (
         patch("custom_components.resideo_native.NativeClient", return_value=client),
         patch("custom_components.resideo_native.config_flow.NativeClient", return_value=client),
@@ -634,3 +637,170 @@ async def test_wireless_room_entities_share_sensor_device_linked_to_thermostat(
     assert room.id != thermostat.device_id
     assert room.via_device_id == thermostat.device_id
     assert "deprecated `via_device` parameter" not in caplog.text
+
+
+async def test_jasper_fan_service_and_external_updates(hass, entry, client):
+    from homeassistant.components.climate import ClimateEntityFeature
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
+    from custom_components.resideo_native.protocol import NativeClient, ResideoAuth
+
+    coordinator = entry.runtime_data
+    device = client.devices["T6-test"]
+    assert not thermostat_state(hass).attributes["supported_features"] & ClimateEntityFeature.FAN_MODE
+    device.raw["settings"] = {"fan": {"allowedModes": ["Auto", "On", "Circulate", "FollowSchedule"],
+                                       "changeableValues": {"mode": "Auto"}, "fanRunning": False}}
+    device.values["thermostatSetpointStatus"] = "PermanentHold"
+    coordinator.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+    state = thermostat_state(hass)
+    assert state.attributes["supported_features"] & ClimateEntityFeature.FAN_MODE
+    assert state.attributes["fan_modes"] == ["auto", "on", "diffuse"]
+    assert state.attributes["fan_mode"] == "auto"
+    before = dict(device.values)
+    session = async_get_clientsession(hass)
+    native = NativeClient(session, ResideoAuth(session))
+    native.devices = client.devices
+    coordinator.client = native
+    async def refresh():
+        device.fan_settings["changeableValues"]["mode"] = "Circulate"
+        coordinator._refresh_generation += 1
+        coordinator._successful_refresh_generation = coordinator._refresh_generation
+        coordinator.async_set_updated_data(client.devices)
+    with patch.object(native, "_request", new_callable=AsyncMock) as request, patch.object(coordinator, "async_request_refresh", side_effect=refresh):
+        await hass.services.async_call("climate", "set_fan_mode", {"entity_id": state.entity_id, "fan_mode": "diffuse"}, blocking=True)
+        request.assert_awaited_once_with("POST", "api/v2/locations/123/devices/T6-test/fan/changeableValues", {"mode": "Circulate"})
+    assert device.values == before
+    assert thermostat_state(hass).attributes["preset_mode"] == "permanent_hold"
+    assert thermostat_state(hass).attributes["fan_mode"] == "diffuse"
+    device.fan_settings["changeableValues"]["mode"] = "On"
+    device.fan_settings["fanRunning"] = True
+    device.thermostat["operationStatus"]["mode"] = "EquipmentOff"
+    coordinator.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+    assert thermostat_state(hass).attributes["fan_mode"] == "on"
+    assert thermostat_state(hass).attributes["hvac_action"] == "fan"
+    sensors = hass.states.async_all("binary_sensor")
+    assert len(sensors) == 1 and sensors[0].state == "on"
+    del device.fan_settings["fanRunning"]
+    coordinator.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+    assert hass.states.get(sensors[0].entity_id).state == "unknown"
+    assert thermostat_state(hass).attributes["hvac_action"] == "idle"
+    device.raw["settings"] = None
+    coordinator.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+    assert not thermostat_state(hass).attributes["supported_features"] & ClimateEntityFeature.FAN_MODE
+
+
+async def _enable_fan(hass, entry, client, *, second=False):
+    """Advertise Jasper capabilities on one or two actual HA climate entities."""
+    device = client.devices["T6-test"]
+    device.raw["settings"] = {"fan": {
+        "allowedModes": ["Auto", "On", "Circulate"],
+        "changeableValues": {"mode": "Auto"},
+    }}
+    device.values["thermostatSetpointStatus"] = "PermanentHold"
+    if second:
+        raw = deepcopy(device.raw)
+        raw.update(deviceID="T6-other", name="Other thermostat")
+        payload = [{"locationID": 123, "name": "Test home", "devices": [raw]}]
+        client.devices.update(parse_locations(payload))
+    entry.runtime_data.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+
+
+async def _call_fan(hass, entity_id, mode):
+    await hass.services.async_call(
+        "climate", "set_fan_mode", {"entity_id": entity_id, "fan_mode": mode},
+        blocking=True,
+    )
+
+
+async def test_fan_delayed_readback_confirms_without_repeating_write(hass, entry, client):
+    await _enable_fan(hass, entry, client)
+    device = client.devices["T6-test"]
+    before = deepcopy(device.values)
+    client.update.reset_mock()
+
+    def update():
+        if client.update.await_count >= 3:
+            device.fan_settings["changeableValues"]["mode"] = "Circulate"
+        return client.devices
+
+    client.update.side_effect = update
+    with patch("custom_components.resideo_native.coordinator.READ_BACK_DELAYS", (0, 0, 0)):
+        await _call_fan(hass, thermostat_state(hass).entity_id, "diffuse")
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert thermostat_state(hass).attributes["fan_mode"] == "diffuse"
+    assert client.update.await_count == 3
+    client.set_fan_mode.assert_awaited_once_with("T6-test", "Circulate")
+    assert device.values == before
+    assert not entry.runtime_data._read_back_tasks
+
+
+async def test_fan_unconfirmed_readback_is_bounded(hass, entry, client, caplog):
+    await _enable_fan(hass, entry, client)
+    client.update.reset_mock()
+    with patch("custom_components.resideo_native.coordinator.READ_BACK_DELAYS", (0, 0, 0)):
+        await _call_fan(hass, thermostat_state(hass).entity_id, "on")
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert thermostat_state(hass).attributes["fan_mode"] == "auto"
+    assert client.update.await_count == 4
+    client.set_fan_mode.assert_awaited_once_with("T6-test", "On")
+    assert "requested mode was not confirmed" in caplog.text
+    assert not entry.runtime_data._read_back_tasks
+
+
+async def test_rapid_fan_commands_replace_only_same_device_readback(hass, entry, client):
+    await _enable_fan(hass, entry, client)
+    coordinator = entry.runtime_data
+    key = "T6-test:fan_mode"
+    entity_id = thermostat_state(hass).entity_id
+    with patch("custom_components.resideo_native.coordinator.READ_BACK_DELAYS", (3600,)):
+        await _call_fan(hass, entity_id, "on")
+        old = coordinator._read_back_tasks[key]
+        await _call_fan(hass, entity_id, "diffuse")
+        await hass.async_block_till_done()
+        assert old.cancelled()
+        assert coordinator._read_back_tasks[key] is not old
+        assert not coordinator._read_back_tasks[key].done()
+        assert [call.args for call in client.set_fan_mode.await_args_list] == [
+            ("T6-test", "On"), ("T6-test", "Circulate"),
+        ]
+
+
+async def test_simultaneous_fan_commands_keep_independent_readbacks(hass, entry, client):
+    from homeassistant.helpers import entity_registry as er
+
+    await _enable_fan(hass, entry, client, second=True)
+    coordinator = entry.runtime_data
+    registry = er.async_get(hass)
+    first = registry.async_get_entity_id("climate", "resideo_native", "T6-test")
+    second = registry.async_get_entity_id("climate", "resideo_native", "T6-other")
+    assert first and second and first != second
+    with patch("custom_components.resideo_native.coordinator.READ_BACK_DELAYS", (3600,)):
+        await asyncio.gather(_call_fan(hass, first, "on"), _call_fan(hass, second, "diffuse"))
+        assert set(coordinator._read_back_tasks) == {"T6-test:fan_mode", "T6-other:fan_mode"}
+        other = coordinator._read_back_tasks["T6-other:fan_mode"]
+        await _call_fan(hass, first, "diffuse")
+        assert coordinator._read_back_tasks["T6-other:fan_mode"] is other
+        assert not other.done()
+        assert {call.args for call in client.set_fan_mode.await_args_list} == {
+            ("T6-test", "On"), ("T6-other", "Circulate"), ("T6-test", "Circulate"),
+        }
+
+
+async def test_hvac_off_reports_only_explicit_fan_activity(hass, entry, client):
+    await _enable_fan(hass, entry, client)
+    device = client.devices["T6-test"]
+    device.values["mode"] = "Off"
+    device.thermostat["operationStatus"]["mode"] = "Heat"  # stale demand
+    device.fan_settings["fanRunning"] = True
+    entry.runtime_data.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+    assert thermostat_state(hass).state == "off"
+    assert thermostat_state(hass).attributes["hvac_action"] == "fan"
+    device.fan_settings.pop("fanRunning")
+    entry.runtime_data.async_set_updated_data(client.devices)
+    await hass.async_block_till_done()
+    assert thermostat_state(hass).attributes["hvac_action"] == "off"

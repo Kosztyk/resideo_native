@@ -6,10 +6,9 @@ from dataclasses import dataclass, field
 from math import isfinite
 from typing import Any
 
-from .rooms import RoomAccessory, RoomPriority
-
 from .errors import CommandError, InvalidResponse
 from .hot_water import HotWaterZone
+from .rooms import RoomAccessory, RoomPriority
 
 # APK framework/utils/r.java and p373qi/d.java g()/u(): these legacy
 # models exchange absolute temperatures in Fahrenheit. thermostat.units is
@@ -17,6 +16,22 @@ from .hot_water import HotWaterZone
 _FAHRENHEIT_WIRE_MODELS = frozenset(
     {"flycatcher", "jasper", "storm", "focus pro", "houdini", "blackbeard"}
 )
+
+
+# Android 6.21.2 fan endpoint; FollowSchedule is intentionally not writable
+# until its schedule/hold semantics are verified on hardware.
+FAN_MODE_MAP = {"Auto": "auto", "On": "on", "Circulate": "diffuse"}
+HA_TO_NATIVE_FAN_MODE = {ha: native for native, ha in FAN_MODE_MAP.items()}
+_NON_JASPER_FAN_FAMILIES = _FAHRENHEIT_WIRE_MODELS - {"jasper"}
+_GENERIC_DEVICE_TYPES = frozenset({"", "thermostat", "stat", "unknown", "lcc", "tcc"})
+
+
+def _mapping(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _reported_bool(value: Any) -> bool | None:
+    return value if isinstance(value, bool) else None
 
 
 def number(value: Any) -> float | None:
@@ -157,6 +172,62 @@ class Thermostat:
         status = self.thermostat.get("operationStatus") or {}
         mode = status.get("mode")
         return mode if isinstance(mode, str) else None
+
+    @property
+    def fan_settings(self) -> dict[str, Any]:
+        """Legacy StatDeviceResponse.settings.fan (APK 6.21.2)."""
+        return _mapping(_mapping(self.raw.get("settings")).get("fan"))
+
+    @property
+    def allowed_fan_modes(self) -> list[str]:
+        modes = self.fan_settings.get("allowedModes")
+        if not isinstance(modes, list):
+            return []
+        return list(dict.fromkeys(
+            mode for mode in modes if isinstance(mode, str) and mode in FAN_MODE_MAP
+        ))
+
+    @property
+    def fan_mode(self) -> str | None:
+        mode = _mapping(self.fan_settings.get("changeableValues")).get("mode")
+        return mode if isinstance(mode, str) and mode in (*FAN_MODE_MAP, "FollowSchedule") else None
+
+    @property
+    def can_control_fan(self) -> bool:
+        """Require an explicit Jasper identifier and no conflicting known family."""
+        def normalize(value: Any) -> str:
+            return value.strip().casefold() if isinstance(value, str) else ""
+
+        raw_type = self.raw.get("deviceType")
+        raw_model = self.raw.get("deviceModel")
+        if any(value is not None and not isinstance(value, str) for value in (raw_type, raw_model)):
+            return False
+        device_type = normalize(raw_type)
+        device_model = normalize(raw_model)
+        if any(
+            model in _NON_JASPER_FAN_FAMILIES or model.startswith("flycatcher")
+            for model in (device_type, device_model)
+        ):
+            return False
+        # A generic type must not hide an explicit Jasper model. An unfamiliar
+        # non-generic type is not proof that Jasper's hold semantics apply.
+        is_jasper = device_type == "jasper" or (
+            device_type in _GENERIC_DEVICE_TYPES and device_model == "jasper"
+        )
+        return is_jasper and bool(self.allowed_fan_modes)
+
+    @property
+    def fan_running(self) -> bool | None:
+        """Actual reported activity, not the configured mode or a demand flag."""
+        return _reported_bool(self.fan_settings.get("fanRunning"))
+
+    @property
+    def fan_request(self) -> bool | None:
+        return _reported_bool(_mapping(self.thermostat.get("operationStatus")).get("fanRequest"))
+
+    @property
+    def circulation_fan_request(self) -> bool | None:
+        return _reported_bool(_mapping(self.thermostat.get("operationStatus")).get("circulationFanRequest"))
 
     @property
     def schedule_enabled(self) -> bool | None:

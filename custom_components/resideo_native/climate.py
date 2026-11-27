@@ -21,8 +21,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_DEFAULT_HOLD, DEFAULT_HOLD, DOMAIN, SCHEDULE_EDITOR_PATH
 from .coordinator import ResideoCoordinator
-from .schedule_entity import ScheduleEntityMixin, register_schedule_actions
 from .protocol import Thermostat
+from .protocol.device import FAN_MODE_MAP, HA_TO_NATIVE_FAN_MODE
+from .schedule_entity import ScheduleEntityMixin, register_schedule_actions
 
 MODE_MAP = {
     "Off": HVACMode.OFF,
@@ -100,6 +101,8 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
             features |= ClimateEntityFeature.TURN_OFF
         if HVACMode.HEAT in self.hvac_modes or HVACMode.COOL in self.hvac_modes:
             features |= ClimateEntityFeature.TURN_ON
+        if self.fan_modes:
+            features |= ClimateEntityFeature.FAN_MODE
         return features
 
     @property
@@ -140,16 +143,34 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
         )
 
     @property
+    def fan_modes(self) -> list[str] | None:
+        device = self.device
+        if not device or not device.can_control_fan:
+            return None
+        return [FAN_MODE_MAP[mode] for mode in device.allowed_fan_modes]
+
+    @property
+    def fan_mode(self) -> str | None:
+        device = self.device
+        if not device or not device.can_control_fan:
+            return None
+        mode = device.fan_mode
+        return FAN_MODE_MAP.get(mode) if mode in device.allowed_fan_modes else None
+
+    @property
     def hvac_action(self) -> HVACAction | None:
         if not self.device:
             return None
         # The configured HVAC mode and active equipment status are different.
-        # Off takes precedence even if the cloud has a stale operationStatus.
+        # Off suppresses potentially stale heating/cooling demand, but the
+        # independent, explicitly reported fan activity can still be active.
         if self.hvac_mode == HVACMode.OFF:
-            return HVACAction.OFF
+            return HVACAction.FAN if self.device.fan_running is True else HVACAction.OFF
         # Use the thermostat's operationStatus, not a temperature comparison:
         # T6 equipment demand can cycle independently of the room/setpoint gap.
         operation = (self.device.operation or "").strip().lower()
+        if operation in ("equipmentoff", "idle", "off", "none") and self.device.fan_running is True:
+            return HVACAction.FAN
         return {
             "heat": HVACAction.HEATING,
             "heating": HVACAction.HEATING,
@@ -251,6 +272,24 @@ class ResideoThermostat(ScheduleEntityMixin, CoordinatorEntity[ResideoCoordinato
             "schedule_status": self.device.raw.get("scheduleStatus"),
             "next_period_time": self.device.values.get("nextPeriodTime"),
         }
+
+    async def async_set_fan_mode(self, fan_mode: str) -> None:
+        device = self.device
+        if not self.available or not device:
+            raise HomeAssistantError("The thermostat is unavailable")
+        native = HA_TO_NATIVE_FAN_MODE.get(fan_mode)
+        if native is None or not device.can_control_fan or native not in device.allowed_fan_modes:
+            raise HomeAssistantError("This fan mode is not supported by the thermostat")
+        device_id = self.device_id
+        await self.coordinator.async_command(
+            self.coordinator.client.set_fan_mode(device_id, native),
+            confirmed=lambda data: (
+                (current := data.get(device_id)) is not None
+                and current.online and current.fan_mode == native
+            ),
+            read_back_key=f"{device_id}:fan_mode",
+            unconfirmed_warning="Resideo fan command was accepted but the requested mode was not confirmed",
+        )
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         if not self.device:

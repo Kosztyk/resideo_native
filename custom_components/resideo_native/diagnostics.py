@@ -10,7 +10,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
     coordinator = entry.runtime_data
     return {
         "integration_version": VERSION,
-        "protocol_source": "Resideo Android 6.21.1",
+        "protocol_source": "Resideo Android 6.21.1 / 6.21.2",
         "last_update_success": coordinator.last_update_success,
         "thermostats": [
             {
@@ -21,6 +21,14 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
                 "allowed_modes": device.allowed_modes,
                 "mode": device.mode,
                 "operation_status": device.operation,
+                "fan": {
+                    "allowed_modes": device.allowed_fan_modes,
+                    "mode": device.fan_mode,
+                    "control_supported": device.can_control_fan,
+                    "running": device.fan_running,
+                    "fan_request": device.fan_request,
+                    "circulation_fan_request": device.circulation_fan_request,
+                },
                 "hold_status": device.values.get("thermostatSetpointStatus"),
                 "schedule_enabled": device.schedule_enabled,
                 "schedule_time_step_minutes": device.schedule_time_step,

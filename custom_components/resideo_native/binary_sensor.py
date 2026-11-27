@@ -1,14 +1,18 @@
-"""Read-only motion, occupancy, battery and connectivity from wireless rooms."""
+"""Read-only wireless room and thermostat fan activity sensors."""
 
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .const import DOMAIN
 from .coordinator import ResideoCoordinator
+from .protocol import Thermostat
 from .room_entity import ResideoRoomEntity
 
 
@@ -42,9 +46,13 @@ async def async_setup_entry(
     seen: set[str] = set()
 
     @callback
-    def add_rooms():
-        entities = []
+    def discover_binary_sensors() -> None:
+        entities: list[BinarySensorEntity] = []
         for thermostat_id, device in (coordinator.data or {}).items():
+            uid = f"{thermostat_id}:fan_running"
+            if device.fan_running is not None and uid not in seen:
+                seen.add(uid)
+                entities.append(ResideoFanRunning(coordinator, thermostat_id))
             for accessory in device.room_accessories.values():
                 for kind in ("motion", "occupancy", "battery_low", "connected"):
                     value = _battery_low(accessory.battery_status) if kind == "battery_low" else (
@@ -59,8 +67,8 @@ async def async_setup_entry(
         if entities:
             async_add_entities(entities)
 
-    add_rooms()
-    entry.async_on_unload(coordinator.async_add_listener(add_rooms))
+    discover_binary_sensors()
+    entry.async_on_unload(coordinator.async_add_listener(discover_binary_sensors))
 
 
 class ResideoRoomBinary(ResideoRoomEntity, BinarySensorEntity):
@@ -95,3 +103,29 @@ class ResideoRoomBinary(ResideoRoomEntity, BinarySensorEntity):
         if self.kind == "battery_low":
             return _battery_low(accessory.battery_status)
         return getattr(accessory, self.kind)
+
+
+class ResideoFanRunning(CoordinatorEntity[ResideoCoordinator], BinarySensorEntity):
+    """Cloud-reported fan activity, independent of fan mode and HVAC mode."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "fan_running"
+    _attr_icon = "mdi:fan"
+
+    def __init__(self, coordinator: ResideoCoordinator, device_id: str) -> None:
+        super().__init__(coordinator)
+        self.device_id = device_id
+        self._attr_unique_id = f"{device_id}:fan_running"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, device_id)})
+
+    @property
+    def device(self) -> Thermostat | None:
+        return (self.coordinator.data or {}).get(self.device_id)
+
+    @property
+    def available(self) -> bool:
+        return bool(super().available and self.device and self.device.online)
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.device.fan_running if self.device else None

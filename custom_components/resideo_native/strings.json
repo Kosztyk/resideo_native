@@ -64,6 +64,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "fan_running": {
+        "name": "Fan running"
+      }
+    },
     "climate": {
       "thermostat": {
         "state_attributes": {
