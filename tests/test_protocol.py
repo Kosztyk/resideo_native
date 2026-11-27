@@ -14,6 +14,8 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlencode, urlsplit
 
+import socket
+
 import aiohttp
 from aiohttp import web
 from aiohttp.test_utils import TestServer
@@ -100,7 +102,9 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
         ]
         for p in self.patches:
             p.start()
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(family=socket.AF_INET)
+        )
         self.auth = ResideoAuth(self.session, Token("valid", "refresh-initial", time.time() + 3600))
         self.client = NativeClient(self.session, self.auth)
 

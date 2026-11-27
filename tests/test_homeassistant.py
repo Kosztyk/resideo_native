@@ -260,6 +260,7 @@ async def test_account_flow_completes_redirected_login_without_pasting_a_url(has
     import base64
     import hashlib
     import json
+    import socket
     from urllib.parse import urlencode
 
     import aiohttp
@@ -336,7 +337,9 @@ async def test_account_flow_completes_redirected_login_without_pasting_a_url(has
         TestServer(app, host="localhost") as server,
         aiohttp.ClientSession(
             cookie_jar=aiohttp.DummyCookieJar(),
-            connector=aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver()),
+            connector=aiohttp.TCPConnector(
+                resolver=aiohttp.ThreadedResolver(), family=socket.AF_INET
+            ),
         ) as http,
     ):
         with (

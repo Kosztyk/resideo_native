@@ -5,6 +5,9 @@
     "frontend",
     "http"
   ],
+  "categories": [
+    "climate.thermostats_heating"
+  ],
   "codeowners": [
     "@Kosztyk"
   ],
@@ -22,5 +25,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Kosztyk/resideo_native/issues",
   "requirements": [],
-  "version": "0.3.6"
+  "version": "0.3.7"
 }

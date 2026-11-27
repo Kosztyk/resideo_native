@@ -1,11 +1,15 @@
 # Resideo Native validation
 
-## v0.3.6 Jasper fan control — offline production candidate
+## v0.3.7 maintenance validation
+
+The thermostat category, CI dependencies and local test networking were updated without changing thermostat command logic. The exact hosted run and commit for v0.3.7 are recorded in the release notes by the release workflow after successful validation. Historical results below refer to their stated versions.
+
+## v0.3.6 Jasper fan control — published production release
 
 - Source: Android APK 6.21.2, `Dd/d.c`, `y9/u.c`, `StatDeviceResponse.settings.fan`; HA Core Lyric 2026.11.0 and aiolyric 2.2.1 conventions.
 - Hardware evidence from the issue #13 reporter: v0.3.6b1 on HA 2026.11.0, three Jasper heat/cool thermostats (US account). Supported modes and initial values were correct; mode changes confirmed within 10–20 seconds without warnings. Permanent Hold, Heat and setpoints were preserved, including a raised setpoint and temperature changes while the fan was On. No usable fanRunning telemetry was apparent; no binary sensor was created. The v0.3.6 write endpoint and payload are unchanged.
 - The new model fallback and explicit fan action while HVAC is Off are not hardware-tested. Cooling operation, Temporary Hold and following schedule were not explicitly tested by the reporter.
-- See [release notes](RELEASE_NOTES_0.3.6.md) for offline checks and [fan protocol/test plan](docs/FAN_CONTROL.md) for details. The HA runtime suite, browser tests and hosted HACS/Hassfest checks remain pending; no live commands were sent during this build.
+- See [release notes](RELEASE_NOTES_0.3.6.md) for offline checks and [fan protocol/test plan](docs/FAN_CONTROL.md) for details. The [v0.3.6 hosted validation run](https://github.com/Kosztyk/resideo_native/actions/runs/46078667779) passed all five jobs: packaging/Python checks (7 packaging and evidence tests), 305 Python/HA tests and 83 subtests (36 IPv6 loopback warnings), 37 JavaScript unit tests and Playwright browser tests, HACS (10/10 checks, with a missing-category warning), and Hassfest. The [v0.3.6 release](https://github.com/Kosztyk/resideo_native/releases/tag/v0.3.6) was published after validation. No live commands were sent during the offline build.
 
 ## v0.3.5 schedule editor and room-sensor checks
 
@@ -158,7 +162,7 @@ See [the APK trace](docs/SLEEP_PROTOCOL.md).
 [Validate Resideo Native](https://github.com/Kosztyk/resideo_native/actions/workflows/validate.yml)
 runs five independent jobs: packaging/Python compilation, the Python/HA suite,
 JavaScript/browser checks, **HACS Validation** and **Hassfest Validation**.
-The workflow runs the full HACS validation. The release workflow publishes v0.3.5 only when all
+The workflow runs the full HACS validation. The release workflow publishes its authorized stable version only when all
 jobs succeed on a push to the current main commit. Its release body records the
 exact validated commit and workflow-run link. The CI checks on that commit are
 the authoritative remote result, rather than a local packaging check alone.

@@ -13,8 +13,8 @@ jobs:
     name: Packaging and Python checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.13'
       - name: Validate repository packaging
@@ -30,8 +30,8 @@ jobs:
     name: Protocol and Home Assistant 2026.10.2 tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.14'
       - name: Install pinned Home Assistant test harness
@@ -43,8 +43,8 @@ jobs:
     name: Visual editor logic and browser tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
           cache: npm
@@ -57,7 +57,7 @@ jobs:
     name: HACS Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - uses: hacs/action@main
         with:
           category: integration
@@ -66,5 +66,5 @@ jobs:
     name: Hassfest Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - uses: home-assistant/actions/hassfest@master

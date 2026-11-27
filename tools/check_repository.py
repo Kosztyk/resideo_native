@@ -47,6 +47,8 @@ def inspect_repository(root: Path = ROOT) -> list[str]:
                 errors.append(
                     "Manifest version must be major.minor.patch with an optional a, b, or rc suffix and number"
                 )
+            if manifest.get("categories") != ["climate.thermostats_heating"]:
+                errors.append("Missing or unexpected thermostat integration category")
             if not manifest.get("codeowners"):
                 errors.append("Missing codeowner")
             expected_order = ["domain", "name"] + sorted(

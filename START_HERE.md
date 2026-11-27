@@ -1,14 +1,14 @@
-# Resideo Native 0.3.6
+# Resideo Native 0.3.7
 
-This offline v0.3.6 production candidate is not yet published through HACS. Back up and replace the complete `/config/custom_components/resideo_native/`
-folder from the release ZIP. Restart Home Assistant and keep the existing account
+Install the current published stable version through HACS or back up and replace the complete `/config/custom_components/resideo_native/`
+folder from the [release ZIP](https://github.com/Kosztyk/resideo_native/releases). Restart Home Assistant and keep the existing account
 configuration.
 
 On a supported T9/T10-family (FlyCatcher) thermostat, find **Room priority** on
 the thermostat’s device page. Look for paired room sensors under the integration’s
 devices. Missing accessory readings may appear as **Unknown** until the sensor
 reports them. See the [room sensor guide](docs/ROOM_SENSORS.md),
-[release notes](RELEASE_NOTES_0.3.6.md) and [validation evidence](VALIDATION.md).
+[release notes](RELEASE_NOTES_0.3.7.md) and [validation evidence](VALIDATION.md).
 
 ## Jasper fan control
 
@@ -38,7 +38,7 @@ Home Assistant macOS app. [PR #10](https://github.com/Kosztyk/resideo_native/pul
    **Review & save**, confirm and **Save to Resideo**.
 7. **Cancel** closes either popup without changing the cloud or switch state.
 8. The full **Schedule editor** has the same create/edit/remove sleep controls.
-   Confirm **Editor 0.3.6** in the popup or full page.
+   Confirm **Editor 0.3.7** in the popup or full page.
 
 The mode switch reflects confirmed cloud type; the separate Heating schedule
 switch controls native schedule On/Off. Opening setup and saving sleep into a

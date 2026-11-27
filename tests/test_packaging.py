@@ -23,6 +23,7 @@ class PackagingTests(unittest.TestCase):
     def test_release_and_manifest(self):
         data = json.loads((COMPONENT / "manifest.json").read_text())
         self.assertEqual(data["domain"], "resideo_native")
+        self.assertEqual(data["categories"], ["climate.thermostats_heating"])
         self.assertEqual(data["version"], runpy.run_path(str(COMPONENT / "const.py"))["VERSION"])
         self.assertEqual(
             data["dependencies"],

@@ -1,12 +1,19 @@
 # Changelog
 
+## 0.3.7 — HACS metadata and CI maintenance
+
+- Add the thermostat integration category and enforce it in packaging checks.
+- Update checkout, setup-python and setup-node to supported Node.js 24 releases.
+- Use IPv4 loopback in local HTTP test clients to avoid blocked IPv6 connection attempts without relaxing network restrictions.
+- Correct published v0.3.6 documentation and synchronize version metadata and the publication gate. No thermostat command behavior changes.
+
 ## 0.3.6 — Jasper fan control
 
 - Promote the hardware-tested v0.3.6b1 mode-only native POST and Home Assistant `auto`, `on`, `diffuse` mappings ([issue #13](https://github.com/Kosztyk/resideo_native/issues/13)). The reporter confirmed Permanent Hold, Heat and setpoint preservation across three Jasper thermostats on HA 2026.11.0.
 - Allow explicit Jasper model fallback for known generic device types; reject known conflicting families and malformed identifiers. Other model families, FollowSchedule and speed writes remain unsupported.
 - When configured HVAC is Off, explicit fan-running telemetry can report HVAC Fan; missing or false telemetry preserves Off. Heating/cooling retain precedence when HVAC is enabled. Fan activity remains optional and was not reported by the three beta devices.
 - Add fan-specific delayed, bounded, superseded and independent read-back regression cases, protocol failure/concurrency tests and typed fan sensor discovery. Preserve existing coordinator and native command behavior.
-- Synchronize stable version metadata and prepare the v0.3.6-only release workflow. Hosted validation and publication are pending.
+- Synchronize stable version metadata and prepare the v0.3.6-only release workflow. Hosted validation completed successfully and v0.3.6 was published.
 
 ## 0.3.5 — Schedule time dropdowns and individual room-sensor readings
 

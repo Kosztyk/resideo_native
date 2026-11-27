@@ -1,4 +1,4 @@
-# Fan control (v0.3.6)
+# Fan control (introduced in v0.3.6)
 
 ## Native protocol and scope
 
@@ -10,7 +10,7 @@ Home Assistant Core Lyric 2026.11.0 maps `Circulate` to `diffuse`, and aiolyric 
 
 ## Manual test plan for issue #13
 
-Install the offline candidate manually after backing up the previous component. Restart HA. Choose one Jasper thermostat initially. Record firmware, fan modes, current fan, HVAC mode, target temperatures, hold status, hold expiration and schedule status. Do not edit the schedule while testing a fan command.
+Install the current validated stable release through HACS, or use the manual installation ZIP from [GitHub Releases](https://github.com/Kosztyk/resideo_native/releases) after backing up the previous component. Restart HA. Choose one Jasper thermostat initially. Record firmware, fan modes, current fan, HVAC mode, target temperatures, hold status, hold expiration and schedule status. Do not edit the schedule while testing a fan command.
 
 1. With Permanent Hold active, change Auto → On → Circulate (`diffuse`) → Auto via `climate.set_fan_mode`. After each change, wait for fresh polling and verify in the official app and HA that only fan mode changed. Repeat with Temporary Hold/HoldUntil and while following schedule, if safe and appropriate. Test Heat, Cool, Heat/Cool and Off only where supported and appropriate.
 2. Change fan mode at the wall and in the app; HA must reflect the new supported mode after a fresh poll. Check that an unsupported or missing fan capability does not create a writable selector.

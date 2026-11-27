@@ -12,13 +12,20 @@ This is an independent community integration for the legacy Resideo / Honeywell 
 
 **Quick links:** [Installation](#installation) · [Room sensors and priority](#wireless-room-sensors-and-room-priority) · [Schedule editor](#schedule-entities-and-editor) · [Validation](VALIDATION.md) · [Updating](#updating) · [Troubleshooting](#troubleshooting)
 
+## What's new in v0.3.7
+
+- Maintenance release: add the thermostat integration category, update CI action dependencies and use IPv4 loopback in local HTTP test clients.
+- Update documentation to record the completed v0.3.6 release validation. Fan control, authentication, schedules, room priority and hot-water behavior are unchanged.
+
+See the [v0.3.7 release notes](RELEASE_NOTES_0.3.7.md) and [validation evidence](VALIDATION.md).
+
 ## What's new in v0.3.6
 
 - [Issue #13](https://github.com/Kosztyk/resideo_native/issues/13): native Jasper/T5/T6 fan modes via `climate.set_fan_mode`, using `auto`, `on` and `diffuse` (Circulate), limited to the modes explicitly advertised by the device.
 - The dedicated mobile fan endpoint sends only `mode`, without rewriting HVAC mode, setpoints, hold, schedule or fan speed. The issue #13 reporter confirmed on three Jasper heat/cool thermostats with Home Assistant 2026.11.0 that Permanent Hold, Heat mode and setpoints were preserved when changing fan modes in v0.3.6b1. Changes were confirmed in about 10–20 seconds without warnings.
 - Cloud-reported `fanRunning` provides an optional read-only **Fan running** binary sensor and fan-only HVAC action when equipment is idle or configured HVAC is Off (with explicit positive fan telemetry). Missing status stays unknown; demand flags are not treated as motor activity.
 
-This offline production candidate is not yet published; install manually until release validation completes. The beta reporter did not receive fan-running telemetry; the optional sensor was absent. Cooling operation, temporary hold, following schedule and the new Off-mode behavior have not been hardware-verified. See [release notes](RELEASE_NOTES_0.3.6.md) and [fan protocol and test plan](docs/FAN_CONTROL.md).
+v0.3.6 is a [published production release](https://github.com/Kosztyk/resideo_native/releases/tag/v0.3.6). The beta reporter did not receive fan-running telemetry; the optional sensor was absent. Cooling operation, temporary hold, following schedule and the new Off-mode behavior have not been hardware-verified. See [release notes](RELEASE_NOTES_0.3.6.md) and [fan protocol and test plan](docs/FAN_CONTROL.md).
 
 ## What's new in v0.3.5
 
@@ -164,7 +171,7 @@ Readback checks day coverage as well as times and temperature. See
 [the protocol investigation](docs/SLEEP_PROTOCOL.md).
 
 Replace the complete integration folder, restart HA and refresh the browser.
-Confirm **Editor 0.3.6** in the full editor or setup popup. Use the hour and
+Confirm **Editor 0.3.7** in the full editor or setup popup. Use the hour and
 minute dropdowns for period start times and Sleep start and end. The editor
 entity, Configure options and optional sidebar remain available. Sidebar-only
 changes preserve poll/default-hold values without reloading thermostat controls.
